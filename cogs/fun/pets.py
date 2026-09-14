@@ -1,3 +1,4 @@
+import asyncio
 import os
 import random
 from io import BytesIO
@@ -32,7 +33,35 @@ class Pets(commands.Cog):
         await ctx.reply(choice)
 
     @commands.command()
-    async def petpet(self, ctx: commands.Context, member: discord.Member):
+    async def petpet(self, ctx: commands.Context, members: commands.Greedy[discord.Member]):
+        if not members:
+            await ctx.send("Please mention at least one member.")
+            return
+
+        files: list[discord.File] = []
+        pet_list: str = f"{ctx.author.mention} has pet "
+
+        capped_members = members[:4]
+
+        gif_gen_tasksss = [self.process_member(ctx, member) for member in capped_members]
+
+        gifs = await asyncio.gather(*gif_gen_tasksss)
+
+        files = [
+            discord.File(gif, filename=f"{member.name}-petpet.gif")
+            for member, gif in zip(capped_members, gifs)
+        ]
+
+        for member in capped_members:
+            pet_list += f"{member.mention} "
+
+        await ctx.reply(
+            content=pet_list,
+            files=files,
+            allowed_mentions=discord.AllowedMentions(users=False,roles=False)
+        )
+
+    async def process_member(self, ctx, member: discord.Member):
         avatar_url = member.display_avatar.url
         async with aiohttp.ClientSession() as session, session.get(avatar_url) as resp:
             if resp.status != 200:
@@ -90,10 +119,7 @@ class Pets(commands.Cog):
         )
         dest.seek(0)
 
-        await ctx.reply(
-            content=f"{member.mention}",
-            file=discord.File(dest, filename=f"{member.name}-petpet.gif"),
-        )
+        return dest
 
     @petpet.error
     async def peptet_error(self, ctx, error):
