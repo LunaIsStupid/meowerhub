@@ -1,4 +1,5 @@
 import datetime
+import time
 from typing import TypedDict
 
 import discord
@@ -279,6 +280,47 @@ class Logging(commands.Cog):
                 return  # cant send the exception anywhere
         else:
             return
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        guild_channels = self.channels.get(str(member.guild.id))
+
+        if guild_channels is None or guild_channels.get("mod_logs") is None:
+            return  # no channel to log to
+
+        if before.channel and after.channel and before.channel.id is after.channel.id:
+            return # same channel dont log
+
+        embed: discord.Embed = discord.Embed(title=member.display_name, color=discord.Color.blurple())
+        description: str = ""
+        if not before.channel and after.channel:
+            description += f"Joined `{after.channel.name}` at <t:{int(time.time())}:t>"
+        elif not after.channel and before.channel:
+            description += f"Left `{before.channel.name}` at <t:{int(time.time())}:t>"
+        elif after.channel and before.channel:
+            description += f"Switched from `{before.channel.name}` to `{after.channel.name}` at <t:{int(time.time())}:t>"
+        else:
+            return
+
+        embed.description = description
+        embed.set_footer(text="meower's hub")
+
+        channel_id = guild_channels.get("member_logs")
+        if not channel_id:
+            return
+        channel = await member.guild.fetch_channel(channel_id)
+
+        if isinstance(channel, discord.abc.Messageable):
+            try:
+                await channel.send(embed=embed)
+            except discord.Forbidden:
+                return  # cant send the message
+            except discord.HTTPException:
+                return  # cant send the exception anywhere
+        else:
+            return
+
+
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User):
