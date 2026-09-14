@@ -49,11 +49,12 @@ async def embed_helper(
 
 
 class ChannelModal(discord.ui.Modal, title="Set Channel"):
-    def __init__(self, setting, guild_id, view):
+    def __init__(self, setting, guild_id, view, bot: MeowBot):
         super().__init__()
         self.setting = setting
         self.guild_id = guild_id
         self.view = view
+        self.bot = bot
 
     channel_input = discord.ui.TextInput(
         label="Channel",
@@ -113,8 +114,15 @@ class ChannelModal(discord.ui.Modal, title="Set Channel"):
             f"UPDATE guilds SET {self.setting} = ? WHERE guild_id = ?",
             (channel.id, self.guild_id),
         )
+
+        logging_cog: Logging | commands.Cog | None = self.bot.get_cog("Logging")
+
         await db.commit()
-        await Logging(client).update_channels(guild_id=str(ctx.guild.id))
+        if logging_cog and hasattr(logging_cog, "update_channels"):
+            logging_cog = cast(Logging, logging_cog)
+            await logging_cog.update_channels(guild_id=str(ctx.guild.id))
+        else:
+            print("Couldnt fetch logging cog correctly")
 
         embed = await embed_helper(db, ctx)
         if not embed:
@@ -130,9 +138,10 @@ class ChannelModal(discord.ui.Modal, title="Set Channel"):
 
 
 class SetupView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, bot: MeowBot):
         super().__init__()
         self.selected_setting = None
+        self.bot = bot
 
     @discord.ui.select(
         placeholder="Choose a setting",
@@ -149,31 +158,31 @@ class SetupView(discord.ui.View):
         self.selected_setting = select.values[0]
         if interaction.guild is not None:
             await interaction.response.send_modal(
-                ChannelModal(self.selected_setting, interaction.guild.id, self)
+                ChannelModal(self.selected_setting, interaction.guild.id, self, self.bot)
             )
         else:
             await interaction.response.send_message("Not a discord server!")
 
 
 class Setup(commands.Cog):
-    def __init__(self, bot):
-        self.bot: commands.Bot = bot
+    def __init__(self, bot: MeowBot):
+        self.bot = bot
         self.db = bot.db
 
     @commands.command()
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
-    async def setup(self, ctx):
+    async def setup(self, ctx: commands.Context):
         """Set server settings"""
         embed = await embed_helper(self.db, ctx)
 
         if not embed:
-            ctx.send("Failed to make embed!")
+            await ctx.send("Failed to make embed!")
             return
 
-        view = SetupView()
-        await ctx.send(embed=embed, view=view)
+        view = SetupView(self.bot)
+        await ctx.send(embed=embed, view=view, ephemeral=True)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: MeowBot):
     await bot.add_cog(Setup(bot))

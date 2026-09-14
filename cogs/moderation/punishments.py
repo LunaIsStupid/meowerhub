@@ -49,6 +49,8 @@ class ModCommands(commands.Cog):
 
         if not match:
             duration_seconds = 2419200
+            duration = "28d"
+            reason = duration + " " + reason
 
         if match:
             number = int(match.group(1))
@@ -210,7 +212,7 @@ class ModCommands(commands.Cog):
     )
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
-    async def unban(self, ctx, member: discord.Member):
+    async def unban(self, ctx, member: discord.User):
         """Unbans a member.
         Usage:
         `!unban <member>`"""

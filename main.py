@@ -59,7 +59,7 @@ def main():
     intents = discord.Intents.all()
 
     client = MeowBot(
-        ext_dir="cogs", intents=intents, command_prefix="!", help_command=MeowHelp()
+        ext_dir="cogs", intents=intents, command_prefix="!", help_command=MeowHelp(), allowed_mentions=discord.AllowedMentions(roles=False, users=False, everyone=False)
     )
     handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
     token: str | None

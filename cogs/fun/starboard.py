@@ -1,4 +1,6 @@
 # First custom cog for this bot...
+from typing import cast
+
 import aiosqlite
 import discord
 from discord.ext import commands
@@ -12,8 +14,13 @@ class Starboard(commands.Cog):
         self.bot: MeowBot = bot
 
     async def _star(self, message: discord.Message):
+
         if not message.guild:
             return  # not in a guild
+
+        if message.author.id is self.bot.user.id:
+            return
+
         reaction_count: int = 0
         reaction_emoji: str | None = None
         for reaction in message.reactions:
@@ -22,12 +29,12 @@ class Starboard(commands.Cog):
                 reaction_count = reaction.count
                 reaction_emoji = "⭐"
 
-            if message.author in users:
-                reaction_count -= 1
+            # if message.author in users:
+            # reaction_count -= 1
 
         sb_message: discord.Message | None = None
 
-        if reaction_count >= 3 and reaction_emoji:
+        if reaction_count >= 2 and reaction_emoji:
             check_query = """
             SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?
             """
@@ -52,10 +59,12 @@ class Starboard(commands.Cog):
                 if not channel:
                     return  # channel doesnt exist
 
+                member = await message.guild.fetch_member(message.author.id)
+
                 embed: discord.Embed = discord.Embed(
                     description=f"{message.content}\n[Jump!]({message.jump_url})",
                     url=message.jump_url,
-                    color=discord.Color.pink(),
+                    color=member.color,
                     timestamp=message.created_at,
                 )
 
@@ -74,6 +83,7 @@ class Starboard(commands.Cog):
                         if (
                             attachment.filename.endswith(".png")
                             or attachment.filename.endswith(".jpg")
+                            or attachment.filename.endswith(".jpeg")
                             and attachment_count != 1
                         ):
                             attachment_count += 1
@@ -81,7 +91,7 @@ class Starboard(commands.Cog):
                         else:
                             try:
                                 file: discord.File = await attachment.to_file(
-                                    use_cached=True
+                                    use_cached=False
                                 )
                                 files.append(file)
                             except (
@@ -95,10 +105,13 @@ class Starboard(commands.Cog):
 
                 embed.set_image(url=urls)
 
+                embeds = [embed for embed in message.embeds]
+                embeds.append(embed)
+
                 if isinstance(channel, discord.abc.Messageable):
                     try:
                         sb_message = await channel.send(
-                            content=f"⭐{reaction_count}", files=files, embed=embed
+                            content=f"⭐{reaction_count}", files=files, embeds=embeds
                         )
                     except discord.Forbidden:
                         return
@@ -115,6 +128,7 @@ class Starboard(commands.Cog):
                 await self.bot.db.execute(
                     create_query, (message.id, message.guild.id, sb_message.id)
                 )
+                await self.bot.db.commit()
                 return
             else:
                 async with self.bot.db.execute(
@@ -125,14 +139,12 @@ class Starboard(commands.Cog):
 
                 if not sb_channel:
                     return  # no starboard which is weird
-                guild_id, sb_message_id = sb_message_row
+                sb_message_id = sb_message_row["starboard_message_id"]
 
-                if not guild_id or not sb_message_id:
+                if not sb_message_id:
                     return
 
                 guild = message.guild
-                if guild_id is not guild.id:
-                    return  # Mismatch
 
                 sb_channel = sb_channel["sb_channel"]
 
@@ -170,8 +182,6 @@ class Starboard(commands.Cog):
                     return
 
                 guild = message.guild
-                if guild_id is not guild.id:
-                    return  # Mismatch
 
                 sb_channel = sb_channel["sb_channel"]
 

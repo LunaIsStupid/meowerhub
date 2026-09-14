@@ -33,6 +33,8 @@ class AFK(commands.Cog):
 
         await self.bot.db.execute(create_query, (ctx.guild.id, ctx.author.id, message))
 
+        await self.bot.db.commit()
+
         if ctx.guild.id not in self.afk_users:
             self.afk_users[ctx.guild.id] = {}
 
@@ -59,6 +61,7 @@ class AFK(commands.Cog):
         if message.author.id in guild_afk and not message.content.startswith(">>"):
             delete_query = "DELETE FROM afk WHERE guild_id = ? AND user_id = ?"
             await self.bot.db.execute(delete_query, (guild_id, user_id))
+            await self.bot.db.commit()
             guild_afk.pop(message.author.id)
             await message.reply("You are no longer afk!")
             return  # Avoid duplicate messages if the author mentions themself
@@ -66,7 +69,7 @@ class AFK(commands.Cog):
         for mention in message.mentions:
             if mention.id in guild_afk:
                 afk_msg = guild_afk[mention.id]
-                await message.reply(f"{mention.display_name} is afk: `{afk_msg}")
+                await message.reply(f"{mention.display_name} is afk: `{afk_msg}`")
                 return  # to prevent spam exit here
 
 

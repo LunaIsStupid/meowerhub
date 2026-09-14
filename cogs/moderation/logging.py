@@ -184,11 +184,12 @@ class Logging(commands.Cog):
         self, before: discord.Message, after: discord.Message
     ):  # same here
         """Log edited messages"""
-        if not before.guild or after.guild:
+        if not before.guild or not after.guild:
             return  # Not a guild message
         guild_channels = self.channels.get(str(before.guild.id))
 
         if guild_channels is None or guild_channels.get("msg_logs") is None:
+            print("no guild_channels")
             return  # no channel to log to
 
         if before.author.bot:
@@ -320,8 +321,6 @@ class Logging(commands.Cog):
         else:
             return
 
-
-
     @commands.Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User):
         """Log unbanned member"""
@@ -431,6 +430,7 @@ class Logging(commands.Cog):
                 try:
                     await channel.send(embed=embed)
                 except discord.Forbidden:
+                    print("forbidden")
                     return  # cant send the message
                 except discord.HTTPException:
                     return  # cant send the exception anywhere
@@ -493,14 +493,14 @@ class Logging(commands.Cog):
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """Log timeouts"""
 
-        if before.is_timed_out() is not True and after.is_timed_out() is not True:
-            return  # nothing to log...
+        if before.is_timed_out() is not True and after.is_timed_out() is not True: return  # nothing to log...
 
         guild: discord.Guild = before.guild
 
         guild_channels = self.channels.get(str(guild.id))
 
         if guild_channels is None or guild_channels.get("mod_logs") is None:
+            print("cant log")
             return  # no where to log to....
 
         timer = None
