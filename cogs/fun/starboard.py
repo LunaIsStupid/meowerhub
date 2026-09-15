@@ -53,12 +53,12 @@ class Starboard(commands.Cog):
             member: discord.Member = await message.guild.fetch_member(message.author.id)
             color = member.color
         except:
-            color = discord.Colour(16755455) #ffaaff
+            color = None
 
         embed: discord.Embed = discord.Embed(
             description=f"{message.content}\n[Jump!]({message.jump_url})",
             url=message.jump_url,
-            color=color,
+            color=color if color and color != discord.Colour(0) else discord.Colour(16755455), #ffaaff
             timestamp=message.created_at,
         )
 
