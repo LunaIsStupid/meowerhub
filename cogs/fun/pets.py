@@ -37,6 +37,7 @@ class Pets(commands.Cog):
         "@*",
         "*",
         "every1",
+        "42, 2A, 052",
     ]
 
     MAX_PETPET_COUNT = 4
