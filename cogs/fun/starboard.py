@@ -38,7 +38,7 @@ class Starboard(commands.Cog):
             users = [user async for user in reaction.users()]
             if reaction.emoji == self.EMOJI:
                 reaction_count = reaction.count
-                if self.ALLOW_SELF_REACTION and message.author in users: reaction_count -= 1
+                if not self.ALLOW_SELF_REACTION and message.author in users: reaction_count -= 1
                 break
 
         return reaction_count
