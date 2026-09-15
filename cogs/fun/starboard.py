@@ -1,6 +1,4 @@
 # First custom cog for this bot...
-from typing import cast
-
 import aiosqlite
 import discord
 from discord.ext import commands
@@ -42,7 +40,7 @@ class Starboard(commands.Cog):
                 reaction_count = reaction.count
                 if self.ALLOW_SELF_REACTION and message.author in users: reaction_count -= 1
                 break
-        
+
         return reaction_count
 
     async def generate_starboard_message(self, message: discord.Message, star_count: int) -> str | None: # message in case we need it later on
