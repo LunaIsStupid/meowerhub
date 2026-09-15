@@ -10,277 +10,183 @@ from main import MeowBot
 
 
 class Starboard(commands.Cog):
+    EMOJI = "⭐"
+    REQUIRED = 1
+    ALLOW_SELF_REACTION = True
+
+    CHECK_QUERY = """
+        SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?
+        """
+    CREATE_QUERY = """
+        INSERT INTO starboard (message_id, guild_id, starboard_message_id)
+        VALUES (?, ?, ?)
+    """
+    DELETE_QUERY = """
+        DELETE FROM starboard WHERE message_id = ?
+    """
+    CHECK_SB_CHANNEL_QUERY = """
+        SELECT sb_channel FROM guilds WHERE guild_id = ?
+    """
+
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
 
-    async def _star(self, message: discord.Message):
-
-        if not message.guild:
-            return  # not in a guild
-
-        if message.author.id is self.bot.user.id:
-            return
+    async def get_stars(self, message: discord.Message) -> int:
+        if not message.guild: return 0 # not in a guild
+        if message.author.id is self.bot.user.id: return 0 # is current bot's message
 
         reaction_count: int = 0
-        reaction_emoji: str | None = None
         for reaction in message.reactions:
             users = [user async for user in reaction.users()]
-            if reaction.emoji == "⭐":
+            if reaction.emoji == self.EMOJI:
                 reaction_count = reaction.count
-                reaction_emoji = "⭐"
+                if self.ALLOW_SELF_REACTION and message.author in users: reaction_count -= 1
+                break
+        
+        return reaction_count
 
-            # if message.author in users:
-            # reaction_count -= 1
+    async def generate_starboard_message(self, message: discord.Message, star_count: int) -> str | None: # message in case we need it later on
+        return f"{self.EMOJI}{star_count}"
 
-        sb_message: discord.Message | None = None
+    async def generate_starboard_attachments(self, message: discord.Message, star_count: int) -> tuple[list[discord.File], list[discord.Embed]] | None: # star_count in case we need it later on
+        if not message.guild: return # not in guild
 
-        if reaction_count >= 2 and reaction_emoji:
-            check_query = """
-            SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?
-            """
-            sb_message_row: aiosqlite.Row | None = None
-            async with self.bot.db.execute(check_query, (message.id,)) as cursor:
-                sb_message_row = await cursor.fetchone()
+        try:
+            member: discord.Member = await message.guild.fetch_member(message.author.id)
+            color = member.color
+        except:
+            color = discord.Colour(16755455) #ffaaff
 
-            if not sb_message_row:
-                async with self.bot.db.execute(
-                    "SELECT sb_channel FROM guilds WHERE guild_id = ?",
-                    (message.guild.id,),
-                ) as cursor:
-                    sb_channel = await cursor.fetchone()
+        embed: discord.Embed = discord.Embed(
+            description=f"{message.content}\n[Jump!]({message.jump_url})",
+            url=message.jump_url,
+            color=color,
+            timestamp=message.created_at,
+        )
 
-                if not sb_channel:
-                    return  # cant send the starboard anywhere
+        embed.set_author(
+            name=message.author.display_name,
+            icon_url=message.author.display_avatar,
+        )
 
-                sb_channel_id = sb_channel["sb_channel"]
+        embed.set_footer(text=f"{message.id} | meower's hub bot")
 
-                channel = await message.guild.fetch_channel(sb_channel_id)
-
-                if not channel:
-                    return  # channel doesnt exist
-
-                member = await message.guild.fetch_member(message.author.id)
-
-                embed: discord.Embed = discord.Embed(
-                    description=f"{message.content}\n[Jump!]({message.jump_url})",
-                    url=message.jump_url,
-                    color=member.color,
-                    timestamp=message.created_at,
-                )
-
-                embed.set_author(
-                    name=message.author.display_name,
-                    icon_url=message.author.display_avatar,
-                )
-
-                embed.set_footer(text=f"{message.id} | meower's hub bot")
-
-                attachment_count = 0
-                files: list[discord.File] = []
-                urls: str = ""
-                if message.attachments:
-                    for attachment in message.attachments:
-                        if (
-                            attachment.filename.endswith(".png")
-                            or attachment.filename.endswith(".jpg")
-                            or attachment.filename.endswith(".jpeg")
-                            and attachment_count != 1
-                        ):
-                            attachment_count += 1
-                            urls = attachment.url
-                        else:
-                            try:
-                                file: discord.File = await attachment.to_file(
-                                    use_cached=False
-                                )
-                                files.append(file)
-                            except (
-                                discord.HTTPException,
-                                discord.NotFound,
-                                discord.Forbidden,
-                            ):
-                                print(
-                                    f"Failed to grab an attachment... {attachment.filename}"
-                                )
-
-                embed.set_image(url=urls)
-
-                embeds = [embed for embed in message.embeds]
-                embeds.append(embed)
-
-                if isinstance(channel, discord.abc.Messageable):
+        attachment_count = 0
+        files: list[discord.File] = []
+        urls = ""
+        if message.attachments:
+            for attachment in message.attachments:
+                if (
+                    attachment.filename.endswith(".png")
+                    or attachment.filename.endswith(".jpg")
+                    or attachment.filename.endswith(".jpeg")
+                    and attachment_count != 1
+                ):
+                    attachment_count += 1
+                    urls = attachment.url
+                else:
                     try:
-                        sb_message = await channel.send(
-                            content=f"⭐{reaction_count}", files=files, embeds=embeds
-                        )
-                    except discord.Forbidden:
-                        return
-                    except discord.HTTPException:
-                        return
+                        file: discord.File = await attachment.to_file(use_cached=False)
+                        files.append(file)
+                    except (
+                        discord.HTTPException,
+                        discord.NotFound,
+                        discord.Forbidden,
+                    ):
+                        print(f"Failed to grab an attachment... {attachment.filename}")
 
-                create_query = """
-                INSERT INTO starboard (message_id, guild_id, starboard_message_id)
-                VALUES (?, ?, ?)
-                """
-                if not sb_message:
-                    return
+        embed.set_image(url=urls)
+        message.embeds.append(embed)
 
-                await self.bot.db.execute(
-                    create_query, (message.id, message.guild.id, sb_message.id)
-                )
-                await self.bot.db.commit()
-                return
-            else:
-                async with self.bot.db.execute(
-                    "SELECT sb_channel FROM guilds WHERE guild_id = ?",
-                    (message.guild.id,),
-                ) as cursor:
-                    sb_channel = await cursor.fetchone()
+        return files, message.embeds
 
-                if not sb_channel:
-                    return  # no starboard which is weird
-                sb_message_id = sb_message_row["starboard_message_id"]
+    async def get_starboard_channel(self, guild: discord.Guild):
+        async with self.bot.db.execute(self.CHECK_SB_CHANNEL_QUERY, (guild.id,),) as cursor:
+            row = await cursor.fetchone()
+            if not row: return # no starboard channel row for current server
+            return await guild.fetch_channel(row["sb_channel"])
 
-                if not sb_message_id:
-                    return
+    async def get_starboard_message_row(self, message_id: int) -> aiosqlite.Row | None:
+        async with self.bot.db.execute(self.CHECK_QUERY, (message_id,)) as cursor:
+            return await cursor.fetchone()
 
-                guild = message.guild
+    async def get_starboard_message(self, channel, row: aiosqlite.Row):
+            guild_id, sb_message_id = row
+            if not guild_id or not sb_message_id: return # invalid message row data
 
-                sb_channel = sb_channel["sb_channel"]
+            return await channel.fetch_message(sb_message_id)
 
-                sb_channel = await guild.fetch_channel(sb_channel)
+    async def process_starred(self, message: discord.Message):
+        if not message.guild: return
+        stars = await self.get_stars(message)
 
-                if not sb_channel:
-                    return  # Couldn't get the channel
+        starboard_channel = await self.get_starboard_channel(message.guild)
+        if not starboard_channel: return # starboard channel is invalid
+        if not isinstance(starboard_channel, discord.abc.Messageable): return # cant send messages in starboard
 
-                if isinstance(sb_channel, discord.abc.Messageable):
-                    sb_message = await sb_channel.fetch_message(sb_message_id)
+        starboard_message_row = await self.get_starboard_message_row(message.id)
+        if not starboard_message_row and stars >= self.REQUIRED:
+            attachments = await self.generate_starboard_attachments(message, stars)
+            content = await self.generate_starboard_message(message, stars)
+            if not attachments or not content: return # invalid content or attachments
 
-                if not sb_message:
-                    return  # No message to edit
+            try: sent_message = await starboard_channel.send(content=content, files=attachments[0], embeds=attachments[1])
+            except discord.Forbidden: return
+            except discord.HTTPException: return
+            if not sent_message: return # didnt sent message for some reason
 
-                await sb_message.edit(content=f"⭐{reaction_count}")
-        else:
-            check_query = """
-            SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?
-            """
-            sb_message_row_to_delete: aiosqlite.Row | None = None
-            async with self.bot.db.execute(check_query, (message.id,)) as cursor:
-                sb_message_row_to_delete = await cursor.fetchone()
-            if sb_message_row_to_delete:
-                async with self.bot.db.execute(
-                    "SELECT sb_channel FROM guilds WHERE guild_id = ?",
-                    (message.guild.id,),
-                ) as cursor:
-                    sb_channel = await cursor.fetchone()
+            await self.bot.db.execute(self.CREATE_QUERY, (message.id, message.guild.id, sent_message.id))
+            await self.bot.db.commit()
+        elif starboard_message_row and stars <= 0:
+            starboard_message = await self.get_starboard_message(starboard_channel, starboard_message_row)
+            if not starboard_message: return # no starboard message to remove
 
-                if not sb_channel:
-                    return  # no starboard which is weird
-                guild_id, sb_message_id = sb_message_row_to_delete
+            await starboard_message.delete()
 
-                if not guild_id or not sb_message_id:
-                    return
+            await self.bot.db.execute(self.DELETE_QUERY, (message.id,))
+            await self.bot.db.commit()
+        elif starboard_message_row:
+            starboard_message = await self.get_starboard_message(starboard_channel, starboard_message_row)
+            if not starboard_message: return # no starboard message to edit
 
-                guild = message.guild
+            content = await self.generate_starboard_message(message, stars)
+            if not content: return # invalid content
 
-                sb_channel = sb_channel["sb_channel"]
+            await starboard_message.edit(content=content)
 
-                sb_channel = await guild.fetch_channel(sb_channel)
+    async def on_reactions_changed(self, payload):
+        message_id = payload.message_id
+        channel_id = payload.channel_id
+        guild_id = payload.guild_id
 
-                if not sb_channel:
-                    return  # Couldn't get the channel
+        if not guild_id: return
 
-                if isinstance(sb_channel, discord.abc.Messageable):
-                    sb_message = await sb_channel.fetch_message(sb_message_id)
+        guild = await self.bot.fetch_guild(guild_id)
+        channel = await guild.fetch_channel(channel_id)
+        message = None
+        if isinstance(channel, discord.abc.Messageable):
+            message = await channel.fetch_message(message_id)
 
-                if not sb_message:
-                    return  # No message to remove
+        if not message: return
 
-                await sb_message.delete()
+        await self.process_starred(message)
 
-                delete_query = "DELETE FROM starboard WHERE message_id = ?"
-                await self.bot.db.execute(delete_query, (message.id,))
-                await self.bot.db.commit()
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
-        message_id = payload.message_id
-        channel_id = payload.channel_id
-        guild_id = payload.guild_id
-
-        if not guild_id:
-            return
-
-        guild = await self.bot.fetch_guild(guild_id)
-        channel = await guild.fetch_channel(channel_id)
-        message = None
-        if isinstance(channel, discord.abc.Messageable):
-            message = await channel.fetch_message(message_id)
-
-        if not message:
-            return
-
-        await self._star(message)
+        await self.on_reactions_changed(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
-        message_id = payload.message_id
-        channel_id = payload.channel_id
-        guild_id = payload.guild_id
-
-        if not guild_id:
-            return
-
-        guild = await self.bot.fetch_guild(guild_id)
-        channel = await guild.fetch_channel(channel_id)
-        message = None
-        if isinstance(channel, discord.abc.Messageable):
-            message = await channel.fetch_message(message_id)
-
-        if not message:
-            return
-
-        await self._star(message)
+        await self.on_reactions_changed(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_clear(self, payload: RawReactionActionEvent):
-        message_id = payload.message_id
-        channel_id = payload.channel_id
-        guild_id = payload.guild_id
-
-        if not guild_id:
-            return
-
-        guild = await self.bot.fetch_guild(guild_id)
-        channel = await guild.fetch_channel(channel_id)
-        message = None
-        if isinstance(channel, discord.abc.Messageable):
-            message = await channel.fetch_message(message_id)
-
-        if not message:
-            return
-
-        await self._star(message)
+        await self.on_reactions_changed(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_clear_emoji(self, payload: RawReactionActionEvent):
-        message_id = payload.message_id
-        channel_id = payload.channel_id
-        guild_id = payload.guild_id
-
-        if not guild_id:
-            return
-
-        guild = await self.bot.fetch_guild(guild_id)
-        channel = await guild.fetch_channel(channel_id)
-        message = None
-        if isinstance(channel, discord.abc.Messageable):
-            message = await channel.fetch_message(message_id)
-
-        if not message:
-            return
-
-        await self._star(message)
+        await self.on_reactions_changed(payload)
 
 
 async def setup(bot: MeowBot):

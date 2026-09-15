@@ -14,49 +14,44 @@ FRAMES = 10
 
 
 class Pets(commands.Cog):
+    PET_REPLYS: list[str] = [
+        "meow",
+        "mmnrp",
+        "purr",
+        "*\\*blows up\\**",
+        "awawawawa",
+        "*\\*bites your hand\\**",
+        "mroow",
+        ">w<",
+        "mrrrp",
+        "mraow",
+        "meawwww",
+    ]
+
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
 
     @commands.command()
     async def pet(self, ctx):
-        possible_replys: list[str] = [
-            "meow",
-            "mmnrp",
-            "purr",
-            "*\\*blows up\\**",
-            "awawawawa",
-            "*\\*bites your hand\\**",
-            "mroow",
-            ">w<",
-        ]
-        choice = random.choice(possible_replys)
-        await ctx.reply(choice)
+        await ctx.reply(random.choice(self.PET_REPLYS))
 
     @commands.command()
     async def petpet(self, ctx: commands.Context, members: commands.Greedy[discord.Member]):
-        if not members:
-            await ctx.send("Please mention at least one member.")
-            return
-
-        files: list[discord.File] = []
-        pet_list: str = f"{ctx.author.mention} has pet "
+        if not members: return await ctx.send("Please mention at least one member.")
 
         capped_members = members[:4]
 
-        gif_gen_tasksss = [self.process_member(ctx, member) for member in capped_members]
+        message = f"{ctx.author.mention} has pet {", ".join([member.mention for member in capped_members])}"
+        
+        gifs = await asyncio.gather(*[self.process_member(ctx, member) for member in capped_members])
 
-        gifs = await asyncio.gather(*gif_gen_tasksss)
-
-        files = [
+        files: list[discord.File] = [
             discord.File(gif, filename=f"{member.name}-petpet.gif")
             for member, gif in zip(capped_members, gifs)
         ]
 
-        for member in capped_members:
-            pet_list += f"{member.mention} "
-
         await ctx.reply(
-            content=pet_list,
+            content=message,
             files=files,
             allowed_mentions=discord.AllowedMentions(users=False,roles=False)
         )
@@ -64,8 +59,7 @@ class Pets(commands.Cog):
     async def process_member(self, ctx, member: discord.Member):
         avatar_url = member.display_avatar.url
         async with aiohttp.ClientSession() as session, session.get(avatar_url) as resp:
-            if resp.status != 200:
-                return await ctx.send("Failed to download image.")
+            if resp.status != 200: return await ctx.send("Failed to download image.")
             image_data = await resp.read()
 
         source = BytesIO(image_data)
@@ -75,9 +69,7 @@ class Pets(commands.Cog):
 
         images = []
 
-        frames = [
-            frame.copy().convert("RGBA") for frame in ImageSequence.Iterator(petpet)
-        ]
+        frames = [frame.copy().convert("RGBA") for frame in ImageSequence.Iterator(petpet)]
 
         frames = [frame.resize((128, 128)) for frame in frames]
 
@@ -100,9 +92,7 @@ class Pets(commands.Cog):
             frame.paste(downscaled_avatar, (offset_x, offset_y), downscaled_avatar)
 
             petpet.seek(i)
-            petpet_frame = petpet.convert("RGBA").resize(
-                (128, 128), Image.Resampling.LANCZOS
-            )
+            petpet_frame = petpet.convert("RGBA").resize((128, 128), Image.Resampling.LANCZOS)
             frame.paste(petpet_frame, (0, 0), petpet_frame)
 
             images.append(frame)
