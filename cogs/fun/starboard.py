@@ -107,10 +107,9 @@ class Starboard(commands.Cog):
             return await cursor.fetchone()
 
     async def get_starboard_message(self, channel, row: aiosqlite.Row):
-            guild_id, sb_message_id = row
-            if not guild_id or not sb_message_id: return # invalid message row data
-
-            return await channel.fetch_message(sb_message_id)
+        guild_id, sb_message_id = row
+        if not guild_id or not sb_message_id: return # invalid message row data
+        return await channel.fetch_message(sb_message_id)
 
     async def process_starred(self, message: discord.Message):
         if not message.guild: return

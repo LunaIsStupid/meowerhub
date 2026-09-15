@@ -1,12 +1,9 @@
-import asyncio
-import os
 import random
 from io import BytesIO
 
-import aiohttp
 import discord
 from discord.ext import commands
-from PIL import Image, ImageSequence
+from petpetgif import petpet
 
 from main import MeowBot
 
@@ -28,88 +25,57 @@ class Pets(commands.Cog):
         "meawwww",
     ]
 
+    MAX_PETPET_COUNT = 4
+
     def __init__(self, bot: MeowBot):
+        print(12)
         self.bot: MeowBot = bot
 
     @commands.command()
     async def pet(self, ctx):
+        print(11222)
         await ctx.reply(random.choice(self.PET_REPLYS))
 
     @commands.command()
-    async def petpet(self, ctx: commands.Context, members: commands.Greedy[discord.Member]):
+    async def petpet(self, ctx: commands.Context, members: commands.Greedy[discord.Member | str]):
         if not members: return await ctx.send("Please mention at least one member.")
-
-        capped_members = members[:4]
-
-        message = f"{ctx.author.mention} has pet {", ".join([member.mention for member in capped_members])}"
+        capped_members = members[:self.MAX_PETPET_COUNT]
+        to_ping: list[str] = []
+        files: list[discord.File] = []
         
-        gifs = await asyncio.gather(*[self.process_member(ctx, member) for member in capped_members])
-
-        files: list[discord.File] = [
-            discord.File(gif, filename=f"{member.name}-petpet.gif")
-            for member, gif in zip(capped_members, gifs)
-        ]
-
+        for member in capped_members:
+            if isinstance(member, discord.Member):
+                mention = member.mention
+                if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLYS)})"
+                elif member.id == ctx.message.author.id: mention += f" (you silly)"
+                to_ping.append(mention)
+                files.append(discord.File(await self.process_member(member), filename=f"{member.name}-petpet.gif"))
+            elif member == "@everyone" and ctx.guild:
+                dest = await self.process_guild(ctx.guild)
+                if not dest: continue
+                to_ping.append(f"the whole {ctx.guild.name}")
+                files.append(discord.File(dest, filename=f"{ctx.guild.name}-petpet.gif"))
+        message = f"{ctx.author.mention} has pet {", ".join(to_ping)}"
         await ctx.reply(
             content=message,
             files=files,
             allowed_mentions=discord.AllowedMentions(users=False,roles=False)
         )
 
-    async def process_member(self, ctx, member: discord.Member):
-        avatar_url = member.display_avatar.url
-        async with aiohttp.ClientSession() as session, session.get(avatar_url) as resp:
-            if resp.status != 200: return await ctx.send("Failed to download image.")
-            image_data = await resp.read()
-
-        source = BytesIO(image_data)
+    async def process_bytes(self, bytes: bytes):
+        source = BytesIO(bytes)
         dest = BytesIO()
-
-        petpet = Image.open(os.path.join(".", "resources", "petpet.gif"))
-
-        images = []
-
-        frames = [frame.copy().convert("RGBA") for frame in ImageSequence.Iterator(petpet)]
-
-        frames = [frame.resize((128, 128)) for frame in frames]
-
-        for i, frame in enumerate(frames):
-            frame = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-
-            squish = i if i < FRAMES / 2 else FRAMES - i
-            width = int(128 * (0.8 + squish * 0.02))
-            height = int(128 * (0.8 - squish * 0.05))
-
-            offset_x = int((128 - width) * 0.5 + 0.03 * 128)
-            offset_y = int(128 - height - 0.08 * 128)
-
-            downscaled_avatar = (
-                Image.open(source)
-                .convert("RGBA")
-                .resize((width, height), Image.Resampling.LANCZOS)
-            )
-
-            frame.paste(downscaled_avatar, (offset_x, offset_y), downscaled_avatar)
-
-            petpet.seek(i)
-            petpet_frame = petpet.convert("RGBA").resize((128, 128), Image.Resampling.LANCZOS)
-            frame.paste(petpet_frame, (0, 0), petpet_frame)
-
-            images.append(frame)
-
-        images[0].save(
-            dest,
-            format="GIF",
-            save_all=True,
-            append_images=images[1:],
-            duration=20,
-            loop=0,
-            disposal=2,
-            optimize=False,
-        )
+        petpet.make(source, dest)
         dest.seek(0)
-
         return dest
+
+    async def process_member(self, member: discord.Member):
+        return await self.process_bytes(await member.display_avatar.read())
+    
+    async def process_guild(self, guild: discord.Guild):
+        if not guild or not guild.icon: return
+        return await self.process_bytes(await guild.icon.read())
+
 
     @petpet.error
     async def peptet_error(self, ctx, error):
