@@ -7,28 +7,41 @@ from petpetgif import petpet
 
 from main import MeowBot
 
-FRAMES = 10
-
 
 class Pets(commands.Cog):
     PET_REPLYS: list[str] = [
+        "*\\*blows up\\**",
+        "*\\*bites your hand\\**",
+        "*\\*blep\\**",
+        "*\\*paws at you\\**",
+        ">w<",
+        "^w^"
+        ":3",
         "meow",
         "mmnrp",
         "purr",
-        "*\\*blows up\\**",
+        "purrrrrrrrr",
+        "prrrrrr",
         "awawawawa",
-        "*\\*bites your hand\\**",
         "mroow",
-        ">w<",
         "mrrrp",
         "mraow",
         "meawwww",
     ]
 
+    EVERYONE_PETPET: list[str] = [
+        "@everyone",
+        "everyone",
+        "all",
+        "@here",
+        "@*",
+        "*",
+        "every1",
+    ]
+
     MAX_PETPET_COUNT = 4
 
     def __init__(self, bot: MeowBot):
-        print(12)
         self.bot: MeowBot = bot
 
     @commands.command()
@@ -50,7 +63,7 @@ class Pets(commands.Cog):
                 elif member.id == ctx.message.author.id: mention += f" (you silly)"
                 to_ping.append(mention)
                 files.append(discord.File(await self.process_member(member), filename=f"{member.name}-petpet.gif"))
-            elif member == "@everyone" and ctx.guild:
+            elif member in self.EVERYONE_PETPET and ctx.guild:
                 dest = await self.process_guild(ctx.guild)
                 if not dest: continue
                 to_ping.append(f"the whole {ctx.guild.name}")
