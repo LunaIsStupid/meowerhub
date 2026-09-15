@@ -11,6 +11,7 @@ class Starboard(commands.Cog):
     EMOJI = "⭐"
     REQUIRED = 1
     ALLOW_SELF_REACTION = True
+    DEFAULT_COLOR = discord.Colour(0xFFAAFF)
 
     CHECK_QUERY = """
         SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?
@@ -30,9 +31,6 @@ class Starboard(commands.Cog):
         self.bot: MeowBot = bot
 
     async def get_stars(self, message: discord.Message) -> int:
-        if not message.guild: return 0 # not in a guild
-        if message.author.id is self.bot.user.id: return 0 # is current bot's message
-
         reaction_count: int = 0
         for reaction in message.reactions:
             users = [user async for user in reaction.users()]
@@ -58,7 +56,7 @@ class Starboard(commands.Cog):
         embed: discord.Embed = discord.Embed(
             description=f"{message.content}\n[Jump!]({message.jump_url})",
             url=message.jump_url,
-            color=color if color and color != discord.Colour(0) else discord.Colour(16755455), #ffaaff
+            color=color if color and color != discord.Colour(0) else self.DEFAULT_COLOR,
             timestamp=message.created_at,
         )
 
@@ -116,11 +114,14 @@ class Starboard(commands.Cog):
 
     async def process_starred(self, message: discord.Message):
         if not message.guild: return
-        stars = await self.get_stars(message)
+        if message.author.id == self.bot.user.id: return # is current bot's message
 
         starboard_channel = await self.get_starboard_channel(message.guild)
         if not starboard_channel: return # starboard channel is invalid
         if not isinstance(starboard_channel, discord.abc.Messageable): return # cant send messages in starboard
+        if message.channel.id == starboard_channel.id: return # no starring in starboard
+
+        stars = await self.get_stars(message)
 
         starboard_message_row = await self.get_starboard_message_row(message.id)
         if not starboard_message_row and stars >= self.REQUIRED:
