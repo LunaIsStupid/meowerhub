@@ -166,7 +166,6 @@ class ModCommands(commands.Cog):
         except ValueError:
             delete_message_days = 0
             reason = days_str + " " + reason
-            return
 
         if delete_message_days < 0:
             delete_message_days = 0
@@ -183,7 +182,8 @@ class ModCommands(commands.Cog):
         try:
             guild_member = await ctx.guild.fetch_member(member.id)
         except discord.NotFound:
-            pass
+            await ctx.send("Couldn't find the user")
+            return
         except discord.HTTPException as e:
             await ctx.send(f"Failed to fetch member for banning: \n-# {e}")
             return

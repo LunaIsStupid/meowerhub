@@ -255,8 +255,8 @@ class Logging(commands.Cog):
             color=discord.Color.red(),
         )
 
-        if banner is not None:
-            embed.set_thumbnail(url=banner.display_avatar.url)
+
+        embed.set_thumbnail(url=user.display_avatar.url)
 
         embed.set_author(name=f"{user.name}", icon_url=user.display_avatar.url)
 
@@ -349,8 +349,8 @@ class Logging(commands.Cog):
             color=discord.Color.green(),
         )
 
-        if unbanner is not None:
-            embed.set_thumbnail(url=unbanner.display_avatar.url)
+
+        embed.set_thumbnail(url=user.display_avatar.url)
 
         embed.set_author(name=f"{user.name}", icon_url=user.display_avatar.url)
 
@@ -531,10 +531,14 @@ class Logging(commands.Cog):
 
             embed.set_footer(text=f"{before.id}")
 
-            embed.add_field(name="Reason:", value=reason, inline=True)
+            if not after.timed_out_until:
+                embed.add_field(name="Reason:", value=reason + "\n**Until**: Unknown", inline=True)
+            else:
+                embed.add_field(name="Reason:", value=reason + f"\n**Until**: <t:{int(after.timed_out_until.timestamp())}:t>", inline=True)
+
+            embed.set_thumbnail(url=before.display_avatar.url)
 
             if timer:
-                embed.set_thumbnail(url=timer.display_avatar.url)
                 embed.add_field(name="Punished By:", value=timer.mention)
         elif not after.is_timed_out() and before.is_timed_out():
             embed = discord.Embed(
@@ -549,8 +553,9 @@ class Logging(commands.Cog):
 
             embed.set_author(name=f"{before.name}", icon_url=before.display_avatar.url)
 
+            embed.set_thumbnail(url=before.display_avatar.url)
+
             if timer:
-                embed.set_thumbnail(url=timer.display_avatar.url)
                 embed.add_field(name="Pardoned By:", value=timer.mention)
         else:
             return  # timeout state didnt change nothing to log
@@ -604,7 +609,7 @@ class Logging(commands.Cog):
 
         embed.add_field(name="Reason:", value=reason, inline=True)
 
-        embed.set_thumbnail(url=ctx.author.display_avatar.url)
+        embed.set_thumbnail(url=member.display_avatar.url)
         embed.add_field(name="Punished By:", value=ctx.author.mention)
 
         channel_id = guild_channels.get("mod_logs")
