@@ -55,6 +55,8 @@ class Pets(commands.Cog):
                 if not dest: continue
                 to_ping.append(f"the whole {ctx.guild.name}")
                 files.append(discord.File(dest, filename=f"{ctx.guild.name}-petpet.gif"))
+        if not to_ping: return await ctx.send("Please mention at least one member.")
+
         message = f"{ctx.author.mention} has pet {", ".join(to_ping)}"
         await ctx.reply(
             content=message,
