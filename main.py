@@ -45,8 +45,11 @@ class MeowBot(commands.Bot):
                     await cog.cog_unload()
 
     async def extract_user(self, ctx: commands.Context, string: str) -> discord.User | discord.Member | str:
-        try: return await commands.MemberConverter().convert(ctx, string)
-        except commands.MemberNotFound: pass
+        if ctx.guild:
+            try:
+                await self.fetch_guild(ctx.guild.id) # This will throw a 404 quickly
+                return await commands.MemberConverter().convert(ctx, string) # This will take too long and expire app commands
+            except commands.MemberNotFound, discord.NotFound: pass
         try: return await commands.UserConverter().convert(ctx, string)
         except commands.UserNotFound: pass
         return string

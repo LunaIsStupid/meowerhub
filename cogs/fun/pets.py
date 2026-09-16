@@ -49,9 +49,10 @@ class Pets(commands.Cog):
         to_ping: list[str] = []
         files: list[discord.File] = []
 
+        await ctx.defer() # May time out, defer here so we can send error message later.
         for member in users.split():
             member = await self.bot.extract_user(ctx, member)
-            if isinstance(member, discord.User) or isinstance(member, discord.Member):
+            if isinstance(member, discord.User | discord.Member):
                 mention = member.mention
                 if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLYS)})"
                 elif member.id == ctx.message.author.id: mention += f" (you silly)"
