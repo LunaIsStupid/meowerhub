@@ -1,5 +1,6 @@
 import re
 from datetime import timedelta
+from sre_compile import FAILURE
 from typing import cast
 
 import discord
@@ -20,6 +21,11 @@ class ModCommands(commands.Cog):
         duration="Duration (e.g., 10m, 1h, 7d), defaults to 28d",
         reason="Reason for the mute",
     )
+    @app_commands.guild_only()
+    @app_commands.default_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.allowed_contexts(guilds=True,dms=False,private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
     async def mute(
@@ -84,6 +90,11 @@ class ModCommands(commands.Cog):
     @app_commands.describe(
         member="The member to unmute",
     )
+    @app_commands.guild_only()
+    @app_commands.default_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.allowed_contexts(guilds=True,dms=False,private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
     async def unmute(self, ctx, member: discord.Member):
@@ -110,6 +121,11 @@ class ModCommands(commands.Cog):
 
     @commands.hybrid_command(name="kick", description="Kick a member")
     @app_commands.describe(member="The member to kick", reason="Reason for the kick")
+    @app_commands.guild_only()
+    @app_commands.default_permissions(kick_members=True)
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.allowed_contexts(guilds=True,dms=False,private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     async def kick(
@@ -146,6 +162,10 @@ class ModCommands(commands.Cog):
         days_str="The number of days worth of messages to delete from the user in a range of 0 to 7 days. Defaults to 0 days",
         reason="Reason for the ban",
     )
+    @app_commands.default_permissions(ban_members=True)
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.allowed_contexts(guilds=True,dms=False,private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     async def ban(
@@ -210,6 +230,11 @@ class ModCommands(commands.Cog):
     @app_commands.describe(
         member="The member to unban",
     )
+    @app_commands.guild_only()
+    @app_commands.default_permissions(ban_members=True)
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.allowed_contexts(guilds=True,dms=False,private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     async def unban(self, ctx, member: discord.User):
@@ -239,6 +264,11 @@ class ModCommands(commands.Cog):
         member="The member to warn",
         reason="Reason for the warn",
     )
+    @app_commands.guild_only()
+    @app_commands.default_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.allowed_contexts(guilds=True,dms=False,private_channels=True)
+    @app_commands.allowed_installs(guilds=True, users=False)
     @commands.has_permissions(moderate_members=True)
     @commands.guild_only()
     async def warn(

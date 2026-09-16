@@ -3,7 +3,6 @@ import random
 
 import discord
 from discord.ext import commands
-from petpetgif import petpet
 
 from main import MeowBot
 
@@ -40,33 +39,43 @@ class HowGay(commands.Cog):
         if idx == 0: return "what?"
         return self.GAY_REPLIES[list(self.GAY_REPLIES.keys())[idx]]
 
-    @commands.command()
-    async def howgay(self, ctx: commands.Context, member: discord.Member | str):
+    @commands.hybrid_command(name="howgay", description="Check how gay someone is!")
+    @discord.app_commands.describe(someone="Who to check gayness levels..")
+    @discord.app_commands.allowed_contexts(guilds=True,dms=True, private_channels=True)
+    async def howgay(self, ctx: commands.Context, someone: str):
+        try: user = await commands.UserConverter().convert(ctx, someone)
+        except commands.UserNotFound: user = someone
+
         name = None
         color = None
         override_id = None
         found_member = None
         to_be = "is"
 
-        if isinstance(member, discord.Member):
-            name = member.name
-            color = member.color
-            override_id = member.id
-            found_member = member
-        elif isinstance(member, str):
-            if member.isdigit():
+        if isinstance(user, discord.User):
+            name = user.display_name
+            color = settings.DEFAULT_COLOR
+            if ctx.guild:
+                try:
+                    member = await ctx.guild.fetch_member(int(user.id))
+                    color =  member.color
+                except: pass
+            override_id = user.id
+            found_member = user
+        elif isinstance(user, str):
+            if user.isdigit():
                 found_member = None
                 if ctx.guild:
-                    try: found_member = await ctx.guild.fetch_member(int(member))
+                    try: found_member = await ctx.guild.fetch_member(int(user))
                     except: pass
                 if not ctx.guild or not found_member:
-                    try: found_member = await self.bot.fetch_user(int(member))
+                    try: found_member = await self.bot.fetch_user(int(user))
                     except: pass
                 if not found_member: return await ctx.send("I cant find that member.")
                 name = found_member.name
                 color = found_member.color
                 override_id = found_member.id
-            elif member in settings.EVERYONE_PETPET:
+            elif user in settings.EVERYONE_PETPET:
                 name = "everyone"
                 to_be = "are"
                 if ctx.guild:
@@ -94,4 +103,4 @@ class HowGay(commands.Cog):
         await ctx.reply(error)
 
 async def setup(bot: MeowBot):
-    await bot.add_cog(The(bot))
+    await bot.add_cog(HowGay(bot))

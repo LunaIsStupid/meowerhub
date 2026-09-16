@@ -40,15 +40,17 @@ class Pets(commands.Cog):
     async def pet(self, ctx):
         await ctx.reply(random.choice(self.PET_REPLYS))
 
-    @commands.command()
-    async def petpet(self, ctx: commands.Context, members: commands.Greedy[discord.Member | str]):
-        if not members: return await ctx.send("Please mention at least one member.")
-        capped_members = members[:self.MAX_PETPET_COUNT]
+    @commands.hybrid_command(name="petpet", description="Pet people!")
+    @discord.app_commands.describe(users="List of users to pet.")
+    @discord.app_commands.allowed_contexts(guilds=True,dms=True, private_channels=True)
+    async def petpet(self, ctx: commands.Context, users: commands.Greedy[discord.User | str]):
+        if not users: return await ctx.send("Please mention at least one member.")
+        capped_users = users[:self.MAX_PETPET_COUNT]
         to_ping: list[str] = []
         files: list[discord.File] = []
 
-        for member in capped_members:
-            if isinstance(member, discord.Member):
+        for member in capped_users:
+            if isinstance(member, discord.User):
                 mention = member.mention
                 if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLYS)})"
                 elif member.id == ctx.message.author.id: mention += f" (you silly)"
@@ -75,7 +77,7 @@ class Pets(commands.Cog):
         dest.seek(0)
         return dest
 
-    async def process_member(self, member: discord.Member):
+    async def process_member(self, member: discord.User):
         return await self.process_bytes(await member.display_avatar.read())
 
     async def process_guild(self, guild: discord.Guild):
