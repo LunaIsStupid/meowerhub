@@ -15,27 +15,8 @@ class DataBase(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("Updating database..")
-
-        for guild in self.bot.guilds:
-            # Adds guilds to guilds table
-            await self.bot.db.execute(
-                "INSERT OR IGNORE INTO guilds (guild_id) VALUES (?)", (guild.id,)
-            )
-
-            for member in guild.members:
-                if not member.bot:
-                    # Adds non-bot members to users table
-                    await self.bot.db.execute(
-                        "INSERT OR IGNORE INTO users (user_id) VALUES (?)", (member.id,)
-                    )
-                    # Bridge guilds and members in guild_members table
-                    await self.bot.db.execute(
-                        "INSERT OR IGNORE INTO guild_members (guild_id, user_id) VALUES (?, ?)",
-                        (guild.id, member.id),
-                    )
-
+        for guild in self.bot.guilds: await self._add_guild(guild)
         await self.bot.db.commit()
-
         print("Database updated!")
 
     @commands.Cog.listener()
@@ -50,6 +31,29 @@ class DataBase(commands.Cog):
             (member.guild.id, member.id),
         )
         await self.bot.db.commit()
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+        await self._add_guild(guild)
+
+    async def _add_guild(self, guild: discord.Guild):
+        await self.bot.db.execute(
+            "INSERT OR IGNORE INTO guilds (guild_id) VALUES (?)", (guild.id,)
+        )
+
+        for member in guild.members:
+            if not member.bot:
+                # Adds non-bot members to users table
+                await self.bot.db.execute(
+                    "INSERT OR IGNORE INTO users (user_id) VALUES (?)", (member.id,)
+                )
+                # Bridge guilds and members in guild_members table
+                await self.bot.db.execute(
+                    "INSERT OR IGNORE INTO guild_members (guild_id, user_id) VALUES (?, ?)",
+                    (guild.id, member.id),
+                )
+        await self.bot.db.commit()
+
 
 
 async def setup(bot):

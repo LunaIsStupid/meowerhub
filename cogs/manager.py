@@ -1,19 +1,26 @@
 #!/usr/bin/env ./.venv/bin/python
 import difflib
+import os
 import pathlib
+import sys
+from datetime import datetime, timezone
 
 import discord
 from discord.ext import commands
 
 
 class CogManager(commands.Cog):
+    uptime_start: datetime
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.cog_dir = pathlib.Path("cogs")
 
     async def cog_load(self):
+        self.uptime_start = datetime.now(timezone.utc)
         print("[Manager] Loaded, attempting to load other cogs.")
         await self._auto_load()
+        return await super().cog_load()
 
     async def _auto_load(self):
         await self.bot.load_extension("cogs._database")
@@ -62,7 +69,7 @@ class CogManager(commands.Cog):
         )
         return candidates[matches[0]] if matches else None
 
-    @commands.group()
+    @commands.group(hidden=True)
     @commands.has_permissions(manage_guild=True)
     async def cog(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -170,6 +177,54 @@ class CogManager(commands.Cog):
         async with ctx.typing():
             await self.bot.tree.sync()
         await ctx.send("Slash commands synced!")
+
+    @commands.command()
+    async def ping(self, ctx: commands.Context):
+        """Pings the bot!"""
+        roundtrip_message = await ctx.send("Pinging...")
+        rt_ms = round(
+            (roundtrip_message.created_at - ctx.message.created_at).total_seconds()
+            * 1000
+        )
+        websocket_ms = round(self.bot.latency * 1000)
+
+        uptime = datetime.now(timezone.utc) - self.uptime_start
+        total_sec = int(uptime.total_seconds())
+        days, rem = divmod(total_sec, 86400)
+        hours, rem = divmod(rem, 3600)
+        minutes, seconds = divmod(rem, 60)
+
+        uptime_string_parts = []
+        if days:
+            uptime_string_parts.append(f"{days} day{'s' if days > 1 else ''}")
+        if hours:
+            uptime_string_parts.append(
+                f"{hours}{'h' if days else ' hour' + ('s' if hours != 1 else '')}"
+            )
+        if minutes:
+            uptime_string_parts.append(
+                f"{minutes}{'m' if hours else ' minute' + ('s' if minutes != 1 else '')}"
+            )
+        if seconds:
+            uptime_string_parts.append(
+                f"{seconds}{'s' if minutes else ' second' + ('s' if seconds != 1 else '')}"
+            )
+        uptime_string = " ".join(uptime_string_parts)
+
+        embed = discord.Embed(
+            title="Pong! 🏓", description="Here are the bot statistics:", color=0xFFAAFF
+        )
+        embed.add_field(name="Latency", value=f"`{websocket_ms}ms`")
+        embed.add_field(name="REST Latency", value=f"`{rt_ms}ms`")
+        embed.add_field(name="Uptime", value=f"`{uptime_string}`", inline=False)
+
+        await roundtrip_message.edit(content="", embed=embed)
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def restart(self, ctx):
+        await ctx.send("Restarting.")
+        os.execv(sys.executable, ["python"] + sys.argv)
 
 
 async def setup(bot: commands.Bot):

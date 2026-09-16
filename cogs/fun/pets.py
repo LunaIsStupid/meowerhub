@@ -45,7 +45,7 @@ class Pets(commands.Cog):
     @discord.app_commands.allowed_installs(guilds=True, users=True)
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def petpet(self, ctx: commands.Context,
-        user1: discord.User | None = None,
+        user1: discord.User | None,
         user2: discord.User | None = None,
         user3: discord.User | None = None,
         user4: discord.User | None = None
