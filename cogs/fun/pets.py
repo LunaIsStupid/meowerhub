@@ -41,17 +41,23 @@ class Pets(commands.Cog):
         await ctx.reply(random.choice(self.PET_REPLYS))
 
     @commands.hybrid_command(name="petpet", description="Pet people!")
-    @discord.app_commands.describe(users="List of users to pet.")
+    @discord.app_commands.describe(user1="Someone to pet!", user2="Someone to pet!", user3="I'm sure you get the idea", user4="Someone to pet!")
     @discord.app_commands.allowed_installs(guilds=True, users=True)
     @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def petpet(self, ctx: commands.Context, *, users: str):
-        if not users: return await ctx.send("Please mention at least one member.", ephemeral=True)
+    async def petpet(self, ctx: commands.Context,
+        user1: discord.User | None = None,
+        user2: discord.User | None = None,
+        user3: discord.User | None = None,
+        user4: discord.User | None = None
+    ):
+        targets: list[str | discord.User] = [u for u in (user1, user2, user3, user4) if u is not None]
         to_ping: list[str] = []
         files: list[discord.File] = []
+        if not targets: return await ctx.send("Please mention at least one member.", ephemeral=True)
 
-        await ctx.defer() # May time out, defer here so we can send error message later.
-        for member in users.split():
-            member = await self.bot.extract_user(ctx, member)
+        await ctx.defer()
+        for member in targets:
+            if isinstance(member, str) and member not in settings.EVERYONE_PETPET: member = await self.bot.extract_user(ctx, member)
             if isinstance(member, discord.User | discord.Member):
                 mention = member.mention
                 if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLYS)})"
@@ -63,6 +69,7 @@ class Pets(commands.Cog):
                 if not dest: continue
                 to_ping.append(f"the whole {ctx.guild.name}")
                 files.append(discord.File(dest, filename=f"{ctx.guild.name}-petpet.gif"))
+
             if len(to_ping) >= self.MAX_PETPET_COUNT: break
         if not to_ping: return await ctx.send("Please mention at least one member.", ephemeral=True)
         message = f"{ctx.author.mention} has pet {", ".join(to_ping)}"
