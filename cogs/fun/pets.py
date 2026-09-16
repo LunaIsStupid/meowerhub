@@ -72,6 +72,7 @@ class Pets(commands.Cog):
 
             if len(to_ping) >= self.MAX_PETPET_COUNT: break
         if not to_ping: return await ctx.send("Please mention at least one member.", ephemeral=True)
+        if len(to_ping) > 2: to_ping[-1] = "and " + to_ping[-1]
         message = f"{ctx.author.mention} has pet {", ".join(to_ping)}"
         await ctx.reply(
             content=message,
