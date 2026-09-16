@@ -35,6 +35,7 @@ class MeowBot(commands.Bot):
 
     async def setup_hook(self):
         await self._load_extensions()
+        await self.tree.sync()
 
     async def close(self):
         for cog_name, cog in self.cogs.items():
@@ -42,6 +43,13 @@ class MeowBot(commands.Bot):
                 print(f"[Shutdown] Unloading and cleaning up cog: {cog_name}")
                 if inspect.iscoroutinefunction(cog.cog_unload):
                     await cog.cog_unload()
+
+    async def extract_user(self, ctx: commands.Context, string: str) -> discord.User | discord.Member | str:
+        try: return await commands.MemberConverter().convert(ctx, string)
+        except commands.MemberNotFound: pass
+        try: return await commands.UserConverter().convert(ctx, string)
+        except commands.UserNotFound: pass
+        return string
 
 
 def main():

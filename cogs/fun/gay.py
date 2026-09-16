@@ -41,18 +41,17 @@ class HowGay(commands.Cog):
 
     @commands.hybrid_command(name="howgay", description="Check how gay someone is!")
     @discord.app_commands.describe(someone="Who to check gayness levels..")
-    @discord.app_commands.allowed_contexts(guilds=True,dms=True, private_channels=True)
+    @discord.app_commands.allowed_installs(guilds=True, users=True)
+    @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def howgay(self, ctx: commands.Context, someone: str):
-        try: user = await commands.UserConverter().convert(ctx, someone)
-        except commands.UserNotFound: user = someone
-
+        user = await self.bot.extract_user(ctx, someone)
         name = None
         color = None
         override_id = None
         found_member = None
         to_be = "is"
 
-        if isinstance(user, discord.User):
+        if isinstance(user, discord.User) or isinstance(user, discord.Member):
             name = user.display_name
             color = settings.DEFAULT_COLOR
             if ctx.guild:
@@ -62,26 +61,13 @@ class HowGay(commands.Cog):
                 except: pass
             override_id = user.id
             found_member = user
-        elif isinstance(user, str):
-            if user.isdigit():
-                found_member = None
-                if ctx.guild:
-                    try: found_member = await ctx.guild.fetch_member(int(user))
-                    except: pass
-                if not ctx.guild or not found_member:
-                    try: found_member = await self.bot.fetch_user(int(user))
-                    except: pass
-                if not found_member: return await ctx.send("I cant find that member.")
-                name = found_member.name
-                color = found_member.color
-                override_id = found_member.id
-            elif user in settings.EVERYONE_PETPET:
+        elif isinstance(user, str) and user in settings.EVERYONE_PETPET:
                 name = "everyone"
                 to_be = "are"
                 if ctx.guild:
                     name += f" in {ctx.guild.name}"
                     override_id = ctx.guild.id
-        if not name: return await ctx.send("Please mention a member or their id.")
+        if not name: return await ctx.send("Please mention a member or their id.", ephemeral=True)
 
         color = color if color and color != discord.Colour.default() else settings.DEFAULT_COLOR
         random_gay = random.randint(self.GAY_MIN, self.GAY_MAX)

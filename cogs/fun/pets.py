@@ -42,15 +42,16 @@ class Pets(commands.Cog):
 
     @commands.hybrid_command(name="petpet", description="Pet people!")
     @discord.app_commands.describe(users="List of users to pet.")
-    @discord.app_commands.allowed_contexts(guilds=True,dms=True, private_channels=True)
-    async def petpet(self, ctx: commands.Context, users: commands.Greedy[discord.User | str]):
-        if not users: return await ctx.send("Please mention at least one member.")
-        capped_users = users[:self.MAX_PETPET_COUNT]
+    @discord.app_commands.allowed_installs(guilds=True, users=True)
+    @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def petpet(self, ctx: commands.Context, *, users: str):
+        if not users: return await ctx.send("Please mention at least one member.", ephemeral=True)
         to_ping: list[str] = []
         files: list[discord.File] = []
 
-        for member in capped_users:
-            if isinstance(member, discord.User):
+        for member in users.split():
+            member = await self.bot.extract_user(ctx, member)
+            if isinstance(member, discord.User) or isinstance(member, discord.Member):
                 mention = member.mention
                 if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLYS)})"
                 elif member.id == ctx.message.author.id: mention += f" (you silly)"
@@ -61,8 +62,8 @@ class Pets(commands.Cog):
                 if not dest: continue
                 to_ping.append(f"the whole {ctx.guild.name}")
                 files.append(discord.File(dest, filename=f"{ctx.guild.name}-petpet.gif"))
-        if not to_ping: return await ctx.send("Please mention at least one member.")
-
+            if len(to_ping) >= self.MAX_PETPET_COUNT: break
+        if not to_ping: return await ctx.send("Please mention at least one member.", ephemeral=True)
         message = f"{ctx.author.mention} has pet {", ".join(to_ping)}"
         await ctx.reply(
             content=message,
@@ -77,7 +78,7 @@ class Pets(commands.Cog):
         dest.seek(0)
         return dest
 
-    async def process_member(self, member: discord.User):
+    async def process_member(self, member: discord.User | discord.Member):
         return await self.process_bytes(await member.display_avatar.read())
 
     async def process_guild(self, guild: discord.Guild):
