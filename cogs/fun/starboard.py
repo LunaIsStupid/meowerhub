@@ -6,12 +6,13 @@ from discord.state import RawReactionActionEvent
 
 from main import MeowBot
 
+from . import _settings as settings
+
 
 class Starboard(commands.Cog):
     EMOJI = "⭐"
     REQUIRED = 1
     ALLOW_SELF_REACTION = True
-    DEFAULT_COLOR = discord.Colour(0xFFAAFF)
 
     CHECK_QUERY = """
         SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?
@@ -56,7 +57,7 @@ class Starboard(commands.Cog):
         embed: discord.Embed = discord.Embed(
             description=f"{message.content}\n[Jump!]({message.jump_url})",
             url=message.jump_url,
-            color=color if color and color != discord.Colour(0) else self.DEFAULT_COLOR,
+            color=color if color and color != discord.Colour(0) else settings.DEFAULT_COLOR,
             timestamp=message.created_at,
         )
 

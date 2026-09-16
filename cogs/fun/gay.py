@@ -1,10 +1,14 @@
-import random
 import bisect
+import random
+
 import discord
 from discord.ext import commands
 from petpetgif import petpet
 
 from main import MeowBot
+
+from . import _settings as settings
+
 
 class The(commands.Cog):
     GAY_REPLIES = {
@@ -19,22 +23,12 @@ class The(commands.Cog):
         # 69: "nice"
     }
     USER_GAY_OVERRIDES = {
-        # id: integer, because thats funny 
+        # id: integer, because thats funny
         # also supports guild ids
         # 416062410022191104: 101
         1532712415832047637: 100
     }
-    DEFAULT_COLOR = discord.Colour(0xFFAAFF)
-    EVERYONE_PETPET: list[str] = [
-        "@everyone",
-        "everyone",
-        "all",
-        "@here",
-        "@*",
-        "*",
-        "every1",
-        "42,2A,052",
-    ]
+
 
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
@@ -68,7 +62,7 @@ class The(commands.Cog):
                 name = found_member.name
                 color = found_member.color
                 override_id = found_member.id
-            elif member in self.EVERYONE_PETPET: # TODO: move to shared settings
+            elif member in settings.EVERYONE_PETPET: # TODO: move to shared settings
                 name = "everyone"
                 to_be = "are"
                 if ctx.guild:
@@ -76,7 +70,7 @@ class The(commands.Cog):
                     override_id = ctx.guild.id
         if not name: return await ctx.send("Please mention a member or their id.")
 
-        color = color if color and color != discord.Colour.default() else self.DEFAULT_COLOR # TODO: move to shared settings
+        color = color if color and color != discord.Colour.default() else settings.DEFAULT_COLOR # TODO: move to shared settings
         random_gay = random.randint(self.GAY_MIN, self.GAY_MAX)
         gay = self.USER_GAY_OVERRIDES.get(override_id, random_gay) if override_id else random_gay
         desc = self.format_howgay_reply(gay)
@@ -90,7 +84,7 @@ class The(commands.Cog):
         embed.set_footer(text=desc)
 
         await ctx.reply(embed=embed)
-    
+
     @howgay.error
     async def howgay_error(self, ctx, error):
         await ctx.reply(error)
