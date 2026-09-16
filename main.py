@@ -43,6 +43,8 @@ class MeowBot(commands.Bot):
                 print(f"[Shutdown] Unloading and cleaning up cog: {cog_name}")
                 if inspect.iscoroutinefunction(cog.cog_unload):
                     await cog.cog_unload()
+        await self.db.close()
+        await super().close()
 
     async def extract_user(self, ctx: commands.Context, string: str) -> discord.User | discord.Member | str:
         if ctx.guild:
