@@ -37,7 +37,7 @@ class Pets(commands.Cog):
         "@*",
         "*",
         "every1",
-        "42, 2A, 052",
+        "42,2A,052",
     ]
 
     MAX_PETPET_COUNT = 4
@@ -47,7 +47,6 @@ class Pets(commands.Cog):
 
     @commands.command()
     async def pet(self, ctx):
-        print(11222)
         await ctx.reply(random.choice(self.PET_REPLYS))
 
     @commands.command()
