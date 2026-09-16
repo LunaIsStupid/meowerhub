@@ -66,7 +66,7 @@ class HowGay(commands.Cog):
                 name = found_member.name
                 color = found_member.color
                 override_id = found_member.id
-            elif member in settings.EVERYONE_PETPET: # TODO: move to shared settings
+            elif member in settings.EVERYONE_PETPET:
                 name = "everyone"
                 to_be = "are"
                 if ctx.guild:
@@ -74,7 +74,7 @@ class HowGay(commands.Cog):
                     override_id = ctx.guild.id
         if not name: return await ctx.send("Please mention a member or their id.")
 
-        color = color if color and color != discord.Colour.default() else settings.DEFAULT_COLOR # TODO: move to shared settings
+        color = color if color and color != discord.Colour.default() else settings.DEFAULT_COLOR
         random_gay = random.randint(self.GAY_MIN, self.GAY_MAX)
         gay = self.USER_GAY_OVERRIDES.get(override_id, random_gay) if override_id else random_gay
         desc = self.format_howgay_reply(gay)
