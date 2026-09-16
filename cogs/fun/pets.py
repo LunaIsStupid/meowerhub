@@ -7,6 +7,8 @@ from petpetgif import petpet
 
 from main import MeowBot
 
+from . import _settings as settings
+
 
 class Pets(commands.Cog):
     PET_REPLYS: list[str] = [
@@ -29,17 +31,6 @@ class Pets(commands.Cog):
         "meawwww",
     ]
 
-    EVERYONE_PETPET: list[str] = [
-        "@everyone",
-        "everyone",
-        "all",
-        "@here",
-        "@*",
-        "*",
-        "every1",
-        "42,2A,052",
-    ]
-
     MAX_PETPET_COUNT = 4
 
     def __init__(self, bot: MeowBot):
@@ -55,7 +46,7 @@ class Pets(commands.Cog):
         capped_members = members[:self.MAX_PETPET_COUNT]
         to_ping: list[str] = []
         files: list[discord.File] = []
-        
+
         for member in capped_members:
             if isinstance(member, discord.Member):
                 mention = member.mention
@@ -63,7 +54,7 @@ class Pets(commands.Cog):
                 elif member.id == ctx.message.author.id: mention += f" (you silly)"
                 to_ping.append(mention)
                 files.append(discord.File(await self.process_member(member), filename=f"{member.name}-petpet.gif"))
-            elif member in self.EVERYONE_PETPET and ctx.guild:
+            elif member in settings.EVERYONE_PETPET and ctx.guild:
                 dest = await self.process_guild(ctx.guild)
                 if not dest: continue
                 to_ping.append(f"the whole {ctx.guild.name}")
@@ -86,7 +77,7 @@ class Pets(commands.Cog):
 
     async def process_member(self, member: discord.Member):
         return await self.process_bytes(await member.display_avatar.read())
-    
+
     async def process_guild(self, guild: discord.Guild):
         if not guild or not guild.icon: return
         return await self.process_bytes(await guild.icon.read())
