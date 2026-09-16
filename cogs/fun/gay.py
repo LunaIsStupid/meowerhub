@@ -22,6 +22,7 @@ class The(commands.Cog):
         # id: integer, because thats funny 
         # also supports guild ids
         # 416062410022191104: 101
+        1532712415832047637: 100
     }
     DEFAULT_COLOR = discord.Colour(0xFFAAFF)
     EVERYONE_PETPET: list[str] = [
