@@ -1,6 +1,5 @@
 import re
 from datetime import timedelta
-from sre_compile import FAILURE
 from typing import cast
 
 import discord
