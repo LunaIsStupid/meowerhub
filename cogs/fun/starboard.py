@@ -11,8 +11,8 @@ from . import _settings as settings
 
 class Starboard(commands.Cog):
     EMOJI = "⭐"
-    REQUIRED = 1
-    ALLOW_SELF_REACTION = True
+    REQUIRED = 3
+    ALLOW_SELF_REACTION = False
 
     CHECK_QUERY = """
         SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?

@@ -69,7 +69,6 @@ class Pets(commands.Cog):
                 if not dest: continue
                 to_ping.append(f"the whole {ctx.guild.name}")
                 files.append(discord.File(dest, filename=f"{ctx.guild.name}-petpet.gif"))
-
             if len(to_ping) >= self.MAX_PETPET_COUNT: break
         if not to_ping: return await ctx.send("Please mention at least one member.", ephemeral=True)
         if len(to_ping) > 2: to_ping[-1] = "and " + to_ping[-1]
