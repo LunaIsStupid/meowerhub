@@ -10,7 +10,7 @@ from main import MeowBot
 from . import _settings as settings
 
 
-class The(commands.Cog):
+class HowGay(commands.Cog):
     GAY_REPLIES = {
         -1: "wow so you hate the gays, banned.",
         0: "eh, you can do better",
