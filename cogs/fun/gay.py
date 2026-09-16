@@ -56,8 +56,12 @@ class The(commands.Cog):
         elif isinstance(member, str):
             if member.isdigit():
                 found_member = None
-                if ctx.guild: found_member = await ctx.guild.fetch_member(int(member))
-                if not ctx.guild or not found_member: found_member = await self.bot.fetch_user(int(member))
+                if ctx.guild:
+                    try: found_member = await ctx.guild.fetch_member(int(member))
+                    except: pass
+                if not ctx.guild or not found_member:
+                    try: found_member = await self.bot.fetch_user(int(member))
+                    except: pass
                 if not found_member: return await ctx.send("I cant find that member.")
                 name = found_member.name
                 color = found_member.color
