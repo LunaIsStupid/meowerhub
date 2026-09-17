@@ -14,6 +14,7 @@ from . import _settings as settings
 import sys
 sys.path.append("...")
 import reuse
+from locales import Locale
 
 class Pets(commands.Cog):
     PET_REPLIES: list[str] = [
@@ -24,6 +25,7 @@ class Pets(commands.Cog):
         "*\\*licks you\\**",
         ">w<",
         "^w^",
+        ">///<",
         ":3",
         "meow",
         "mmnrp",
@@ -53,7 +55,7 @@ class Pets(commands.Cog):
     async def petpet_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]: # wrapper, cant directly call self.bot.user_autocomplete
         return await self.bot.user_autocomplete(interaction=interaction, current=current)
 
-    @commands.command(name="petpet", description="Pet people!")
+    @reuse.cmd("petpet")
     async def prefix_petpet(self, ctx: commands.Context,
         user1: str | None = None,
         user2: str | None = None,
@@ -61,15 +63,15 @@ class Pets(commands.Cog):
         user4: str | None = None,
     ):
         targets: list[reuse.USER | str] = [u for u in (user1, user2, user3, user4) if u is not None]
-        if not targets: return await ctx.send("Please mention at least one member.", ephemeral=True)
+        if not targets: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
         await ctx.defer()
         to_ping, files = await self.petpet(ctx.author.id, targets, ctx)
-        if not to_ping: return await ctx.send("Please mention at least one member.", ephemeral=True)
-        message = f"{ctx.author.mention} has pet {", ".join(to_ping)}"
+        if not to_ping: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
+        message = Locale.get("petpet.result", petter = ctx.author.mention, petted = ", ".join(to_ping))
         await ctx.reply(content=message, files=files, allowed_mentions=reuse.NO_MENTION)
 
-    @app_commands.command(name="petpet", description="Pet someone!")
-    @app_commands.describe(user1="Someone to pet!", user2="Another one!!!", user3="Another!!", user4="All the pets!!")
+    @reuse.app_cmd("petpet")
+    @reuse.cmd_describe("petpet", ["user1", "user2", "user3", "user4"])
     @reuse.guild_and_app
     async def slash_petpet(self, interaction: discord.Interaction,
         user1: discord.User,
@@ -87,22 +89,24 @@ class Pets(commands.Cog):
     async def petpet(self, author_id: int, targets: list[reuse.USER | str], ctx) -> tuple[list[str], list[discord.File]]:
         to_ping: list[str] = []
         files: list[discord.File] = []
+
         for member in targets:
             if isinstance(member, str) and member not in settings.EVERYONE: member = await self.bot.extract_user(ctx, member)
             if isinstance(member, reuse.USER):
-                to_ping.append(await self.process_message(author_id, member))
+                to_ping.append(await self.process_message(member, author_id))
                 files.append(discord.File(await self.process_member(member), filename=f"{member.name}-petpet.gif"))
             elif isinstance(member, str) and member in settings.EVERYONE and ctx.guild:
                 dest = await self.process_guild(ctx.guild)
                 if not dest: continue
-                to_ping.append(await self.process_message(author_id, ctx.guild))
+                to_ping.append(await self.process_message(ctx.guild))
                 files.append(discord.File(dest, filename=f"{ctx.guild}-petpet.gif"))
             if len(to_ping) >= self.MAX_PETPET_COUNT: break
+        if not to_ping: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
         if len(to_ping) > 2: to_ping[-1] = "and " + to_ping[-1]
 
         return to_ping, files
 
-    async def process_message(self, author_id: int, member: reuse.USER | discord.Guild):
+    async def process_message(self, member: reuse.USER | discord.Guild, author_id: int | None = None):
         mention = "error"
         if isinstance(member, reuse.USER):
             mention = member.mention

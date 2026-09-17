@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 
 from help import MeowHelp
 
+from locales import Locale
+
 load_dotenv()
 
 
@@ -37,6 +39,7 @@ class MeowBot(commands.Bot):
     async def setup_hook(self):
         await self._load_extensions()
         await self.tree.sync()
+        Locale.loadLocales()
 
     async def close(self):
         for cog_name, cog in self.cogs.items():
