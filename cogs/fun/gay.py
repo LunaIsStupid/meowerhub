@@ -8,6 +8,9 @@ from main import MeowBot
 
 from . import _settings as settings
 
+import sys
+sys.path.append("...")
+import reuse
 
 class HowGay(commands.Cog):
     GAY_REPLIES = {
@@ -41,8 +44,7 @@ class HowGay(commands.Cog):
 
     @commands.hybrid_command(name="howgay", description="Check how gay someone is!")
     @discord.app_commands.describe(someone="Who to check gayness levels..")
-    @discord.app_commands.allowed_installs(guilds=True, users=True)
-    @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @reuse.guild_and_app
     async def howgay(self, ctx: commands.Context, someone: str):
         user = await self.bot.extract_user(ctx, someone)
         name = None
@@ -51,7 +53,7 @@ class HowGay(commands.Cog):
         found_member = None
         to_be = "is"
 
-        if isinstance(user, discord.User) or isinstance(user, discord.Member):
+        if isinstance(user, reuse.USER):
             name = user.display_name
             color = settings.DEFAULT_COLOR
             if ctx.guild:
@@ -61,7 +63,7 @@ class HowGay(commands.Cog):
                 except: pass
             override_id = user.id
             found_member = user
-        elif isinstance(user, str) and user in settings.EVERYONE_PETPET:
+        elif isinstance(user, str) and user in settings.EVERYONE:
                 name = "everyone"
                 to_be = "are"
                 if ctx.guild:

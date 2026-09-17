@@ -10,6 +10,9 @@ from main import MeowBot
 
 from . import _settings as settings
 
+import sys
+sys.path.append("...")
+import reuse
 
 class Pets(commands.Cog):
     PET_REPLIES: list[str] = [
@@ -33,7 +36,7 @@ class Pets(commands.Cog):
     ]
 
     REPLY_OVERRIDES = { # TODO: maybe move to db for runtime editing but ehhh idk it would have to check the thing like at max 4 times a !petpet, will think about it later
-        416062410022191104: ["he is purring"], # zephyr
+        reuse.IDS.ZEPHYR: ["he is purring"]
     }
 
     MAX_PETPET_COUNT = 4
@@ -49,28 +52,26 @@ class Pets(commands.Cog):
         return await self.bot.user_autocomplete(interaction=interaction, current=current)
 
     @commands.hybrid_command(name="petpet", description="Pet people!")
-    @app_commands.describe(user1="Someone to pet!", user2="Someone to pet!", user3="I'm sure you get the idea", user4="Someone to pet!")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @app_commands.autocomplete(user1=petpet_autocomplete, user2=petpet_autocomplete, user3=petpet_autocomplete, user4=petpet_autocomplete)
+    @discord.app_commands.describe(user1="Someone to pet!", user2="Someone to pet!", user3="I'm sure you get the idea", user4="Someone to pet!")
+    @reuse.guild_and_app
     async def petpet(self, ctx: commands.Context,
         user1: str | None = None,
         user2: str | None = None,
         user3: str | None = None,
         user4: str | None = None,
     ):
-        targets: list[discord.User | str] = [u for u in (user1, user2, user3, user4) if u is not None]
+        targets: list[reuse.USER | str] = [u for u in (user1, user2, user3, user4, *(extra.split() if extra else [None])) if u is not None]
         to_ping: list[str] = []
         files: list[discord.File] = []
         if not targets: return await ctx.send("Please mention at least one member.", ephemeral=True)
 
         await ctx.defer()
         for member in targets:
-            if isinstance(member, str) and member not in settings.EVERYONE_PETPET: member = await self.bot.extract_user(ctx, member)
-            if isinstance(member, discord.User | discord.Member | discord.ClientUser):
+            if isinstance(member, str) and member not in settings.EVERYONE: member = await self.bot.extract_user(ctx, member)
+            if isinstance(member, reuse.USER):
                 to_ping.append(await self.process_message(ctx, member))
                 files.append(discord.File(await self.process_member(member), filename=f"{member.name}-petpet.gif"))
-            elif isinstance(member, str) and member in settings.EVERYONE_PETPET and ctx.guild:
+            elif isinstance(member, str) and member in settings.EVERYONE and ctx.guild:
                 dest = await self.process_guild(ctx.guild)
                 if not dest: continue
                 to_ping.append(await self.process_message(ctx, ctx.guild))
@@ -80,15 +81,11 @@ class Pets(commands.Cog):
         if len(to_ping) > 2: to_ping[-1] = "and " + to_ping[-1]
 
         message = f"{ctx.author.mention} has pet {", ".join(to_ping)}"
-        await ctx.reply(
-            content=message,
-            files=files,
-            allowed_mentions=discord.AllowedMentions(users=False,roles=False)
-        )
-
-    async def process_message(self, ctx: commands.Context, member: discord.User | discord.Member | discord.ClientUser | discord.Guild):
+        await ctx.reply(content=message, files=files, allowed_mentions=reuse.NO_MENTION)
+    
+    async def process_message(self, ctx: commands.Context, member: reuse.USER | discord.Guild):
         mention = "error"
-        if isinstance(member, discord.User | discord.Member | discord.ClientUser):
+        if isinstance(member, reuse.USER):
             mention = member.mention
             if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLIES)})"
             elif member.id == ctx.message.author.id: mention += f" (you silly)"
@@ -97,8 +94,6 @@ class Pets(commands.Cog):
             mention = f"the whole {ctx.guild.name}"
         return mention
 
-
-
     async def process_bytes(self, bytes: bytes):
         source = BytesIO(bytes)
         dest = BytesIO()
@@ -106,13 +101,12 @@ class Pets(commands.Cog):
         dest.seek(0)
         return dest
 
-    async def process_member(self, member: discord.User | discord.Member | discord.ClientUser):
+    async def process_member(self, member: reuse.USER):
         return await self.process_bytes(await member.display_avatar.read())
 
-    async def process_guild(self, guild: discord.Guild):
+    async def process_guild(self, guild: reuse.GUILD):
         if not guild or not guild.icon: return
         return await self.process_bytes(await guild.icon.read())
-
 
     @petpet.error
     async def peptet_error(self, ctx, error):

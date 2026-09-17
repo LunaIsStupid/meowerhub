@@ -2,7 +2,7 @@ import discord
 
 # Shared settings file
 
-EVERYONE_PETPET: list[str] = [
+EVERYONE: list[str] = [
     "@everyone",
     "everyone",
     "all",

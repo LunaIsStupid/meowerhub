@@ -526,20 +526,12 @@ class Logging(commands.Cog):
                 timestamp=datetime.datetime.now(datetime.UTC),
                 color=discord.Color.red(),
             )
-
             embed.set_author(name=f"{before.name}", icon_url=before.display_avatar.url)
-
             embed.set_footer(text=f"{before.id}")
-
-            if not after.timed_out_until:
-                embed.add_field(name="Reason:", value=reason + "\n**Until**: Unknown", inline=True)
-            else:
-                embed.add_field(name="Reason:", value=reason + f"\n**Until**: <t:{int(after.timed_out_until.timestamp())}:t>", inline=True)
-
+            if not after.timed_out_until: embed.add_field(name="Reason:", value=reason + "\n**Until**: Unknown", inline=True)
+            else: embed.add_field(name="Reason:", value=reason + f"\n**Until**: <t:{int(after.timed_out_until.timestamp())}:t>", inline=True)
             embed.set_thumbnail(url=before.display_avatar.url)
-
-            if timer:
-                embed.add_field(name="Punished By:", value=timer.mention)
+            if timer: embed.add_field(name="Punished By:", value=timer.mention)
         elif not after.is_timed_out() and before.is_timed_out():
             embed = discord.Embed(
                 title="Member Unmuted",
@@ -561,14 +553,9 @@ class Logging(commands.Cog):
             return  # timeout state didnt change nothing to log
 
         if isinstance(channel, discord.abc.Messageable):
-            try:
-                await channel.send(embed=embed)
-            except discord.Forbidden:
-                return  # cant send the message
-            except discord.HTTPException:
-                return  # cant send the exception anywhere
-        else:
-            return
+            try: await channel.send(embed=embed)
+            except discord.Forbidden: return  # cant send the message
+            except discord.HTTPException: return  # cant send the exception anywhere
 
     async def log_warn(self, ctx, member: discord.Member, reason: str):
         """Core of the warn command"""
@@ -583,12 +570,8 @@ class Logging(commands.Cog):
             warning_id = cursor.lastrowid
         await self.bot.db.commit()
 
-        try:
-            await member.send(
-                f"You were warned in {ctx.guild.name} for `{reason}`\nWarning ID: `{warning_id}`"
-            )
-        except discord.Forbidden:
-            pass  # cant dm the member
+        try: await member.send(f"You were warned in {ctx.guild.name} for `{reason}`\nWarning ID: `{warning_id}`")
+        except discord.Forbidden: pass  # cant dm the member
 
         guild: discord.Guild = ctx.guild
 
@@ -602,30 +585,20 @@ class Logging(commands.Cog):
             timestamp=datetime.datetime.now(datetime.UTC),
             color=discord.Color.blurple(),
         )
-
         embed.set_author(name=f"{member.name}", icon_url=member.display_avatar.url)
-
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.add_field(name="Reason:", value=reason, inline=True)
+        embed.add_field(name="Punished By:", value=ctx.author.mention)
         embed.set_footer(text=f"{member.id}")
 
-        embed.add_field(name="Reason:", value=reason, inline=True)
-
-        embed.set_thumbnail(url=member.display_avatar.url)
-        embed.add_field(name="Punished By:", value=ctx.author.mention)
-
         channel_id = guild_channels.get("mod_logs")
-        if not channel_id:
-            return
+        if not channel_id: return
         channel = await ctx.guild.fetch_channel(channel_id)
 
         if isinstance(channel, discord.abc.Messageable):
-            try:
-                await channel.send(embed=embed)
-            except discord.Forbidden:
-                return  # cant send the message
-            except discord.HTTPException:
-                return  # cant send the exception anywhere
-        else:
-            return
+            try: await channel.send(embed=embed)
+            except discord.Forbidden: return  # cant send the message
+            except discord.HTTPException: return  # cant send the exception anywhere
 
 
 async def setup(bot):
