@@ -20,6 +20,7 @@ class Pets(commands.Cog):
         "*\\*bites your hand\\**",
         "*\\*blep\\**",
         "*\\*paws at you\\**",
+        "*\\*licks you\\**",
         ">w<",
         "^w^",
         ":3",
@@ -60,7 +61,7 @@ class Pets(commands.Cog):
         user3: str | None = None,
         user4: str | None = None,
     ):
-        targets: list[reuse.USER | str] = [u for u in (user1, user2, user3, user4, *(extra.split() if extra else [None])) if u is not None]
+        targets: list[reuse.USER | str] = [u for u in (user1, user2, user3, user4) if u is not None]
         to_ping: list[str] = []
         files: list[discord.File] = []
         if not targets: return await ctx.send("Please mention at least one member.", ephemeral=True)
