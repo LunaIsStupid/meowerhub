@@ -2,6 +2,7 @@ import random
 from io import BytesIO
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from petpetgif import petpet
 
@@ -44,18 +45,26 @@ class Pets(commands.Cog):
     async def pet(self, ctx):
         await ctx.reply(random.choice(self.PET_REPLIES))
 
+    async def petpet_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        search = (current or "").lower().lstrip('@')
+        choices = []
+        if not current and current.lower() in interaction.user.display_name.lower() and interaction.channel and isinstance(interaction.channel, discord.abc.PrivateChannel): choices.append(app_commands.Choice(name=f"@{interaction.user.display_name}", value=interaction.user.mention))
+        if interaction.channel and isinstance(interaction.channel, discord.abc.PrivateChannel): choices.extend([app_commands.Choice(name=f"@{member.display_name}", value=member.mention) for member in interaction.channel.recipients if member and member.display_name and (not search or search in member.display_name.lower())])
+        elif interaction.guild: choices.extend([app_commands.Choice(name=f"@{member.display_name}", value=member.mention) for member in interaction.guild.members if member.display_name and (not search or search in member.display_name.lower())])
+        return choices[:25]
+
     @commands.hybrid_command(name="petpet", description="Pet people!")
-    @discord.app_commands.describe(user1="Someone to pet!", user2="Someone to pet!", user3="I'm sure you get the idea", user4="Someone to pet!")
-    @discord.app_commands.allowed_installs(guilds=True, users=True)
-    @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.describe(user1="Someone to pet!", user2="Someone to pet!", user3="I'm sure you get the idea", user4="Someone to pet!")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    @app_commands.autocomplete(user1=petpet_autocomplete, user2=petpet_autocomplete, user3=petpet_autocomplete, user4=petpet_autocomplete)
     async def petpet(self, ctx: commands.Context,
-        user1: discord.User | None = None,
-        user2: discord.User | None = None,
-        user3: discord.User | None = None,
-        user4: discord.User | None = None,
-        *, extra: str | None = None
+        user1: str | None = None,
+        user2: str | None = None,
+        user3: str | None = None,
+        user4: str | None = None,
     ):
-        targets: list[discord.User | str] = [u for u in (user1, user2, user3, user4, *(extra.split() if extra else [None])) if u is not None]
+        targets: list[discord.User | str] = [u for u in (user1, user2, user3, user4) if u is not None]
         to_ping: list[str] = []
         files: list[discord.File] = []
         if not targets: return await ctx.send("Please mention at least one member.", ephemeral=True)
@@ -81,7 +90,7 @@ class Pets(commands.Cog):
             files=files,
             allowed_mentions=discord.AllowedMentions(users=False,roles=False)
         )
-    
+
     async def process_message(self, ctx: commands.Context, member: discord.User | discord.Member | discord.ClientUser | discord.Guild):
         mention = "error"
         if isinstance(member, discord.User | discord.Member | discord.ClientUser):
