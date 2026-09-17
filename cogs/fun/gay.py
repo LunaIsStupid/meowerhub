@@ -11,6 +11,7 @@ from . import _settings as settings
 import sys
 sys.path.append("...")
 import reuse
+from locales import Locale
 
 class HowGay(commands.Cog):
     GAY_REPLIES = {
@@ -42,8 +43,8 @@ class HowGay(commands.Cog):
         if idx == 0: return "what?"
         return self.GAY_REPLIES[list(self.GAY_REPLIES.keys())[idx]]
 
-    @commands.hybrid_command(name="howgay", description="Check how gay someone is!")
-    @discord.app_commands.describe(someone="Who to check gayness levels..")
+    @reuse.hybrid("howgay")
+    @reuse.cmd_describe("howgay", ["someone"])
     @reuse.guild_and_app
     async def howgay(self, ctx: commands.Context, someone: str):
         user = await self.bot.extract_user(ctx, someone)
@@ -69,7 +70,7 @@ class HowGay(commands.Cog):
                 if ctx.guild:
                     name += f" in {ctx.guild.name}"
                     override_id = ctx.guild.id
-        if not name: return await ctx.send("Please mention a member or their id.", ephemeral=True)
+        if not name: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
 
         color = color if color and color != discord.Colour.default() else settings.DEFAULT_COLOR
         random_gay = random.randint(self.GAY_MIN, self.GAY_MAX)
@@ -78,7 +79,7 @@ class HowGay(commands.Cog):
 
         embed = discord.Embed()
         embed.set_author(
-            name=f"🏳️‍🌈 {name} {to_be} {gay}% gay!",
+            name=Locale.get("howgay.result", name=name, to_be=to_be, gay=gay),
             icon_url=found_member.display_avatar if found_member else None,
         )
         embed.color = color

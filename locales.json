@@ -1,0 +1,16 @@
+{
+    "error.no_members_arg": "Please mention at least one member.",
+
+    "petpet.desc": "Pet people!",
+    "petpet.user1": "Someone to pet!",
+    "petpet.user2": "Someone to pet!",
+    "petpet.user3": "I'm sure you get the idea",
+    "petpet.user4": "Someone to pet!",
+    "petpet.result": "{petter} has pet {petted}",
+
+    "howgay.desc": "Check how gay someone is!",
+    "howgay.someone": "Who to check gayness levels..",
+    "howgay.result": "🏳️‍🌈 {name} {to_be} {gay}% gay!"
+
+
+}

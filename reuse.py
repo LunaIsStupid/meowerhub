@@ -3,6 +3,7 @@
 import discord
 from discord.ext import commands
 from enum import Enum, auto # in case we need them later
+from locales import Locale
 
 # Source - https://stackoverflow.com/a/5409569
 # Posted by Jochen Ritzel, modified by community. See post 'Timeline' for change history
@@ -21,6 +22,21 @@ def check_permissions(**kwargs):
         discord.app_commands.default_permissions(**kwargs),
         discord.app_commands.checks.has_permissions(**kwargs)
     )
+
+def hybrid(key: str):
+    return commands.hybrid_command(name = key, description = Locale.getFormatted(f"{key}.desc"))
+
+def app_cmd(key: str):
+    return discord.app_commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"))
+
+def cmd(key: str):
+    return commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"))
+
+def cmd_describe(key: str, args: list[str]):
+    kwargs = {}
+    for arg in args:
+        kwargs[arg] = Locale.getFormatted(f"{key}.{arg}")
+    return discord.app_commands.describe(**kwargs)
 
 class IDS: # readability, add when needed
     ZEPHYR = 416062410022191104
