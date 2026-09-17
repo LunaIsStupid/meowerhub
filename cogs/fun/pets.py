@@ -18,7 +18,7 @@ class Pets(commands.Cog):
         "*\\*blep\\**",
         "*\\*paws at you\\**",
         ">w<",
-        "^w^"
+        "^w^",
         ":3",
         "meow",
         "mmnrp",
