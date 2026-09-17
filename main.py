@@ -62,6 +62,7 @@ class MeowBot(commands.Bot):
         choices = []
         if not current and current.lower() in interaction.user.display_name.lower() and interaction.channel and isinstance(interaction.channel, discord.abc.PrivateChannel):
             choices.append(app_commands.Choice(name=f"@{interaction.user.display_name}", value=interaction.user.mention))
+            choices.append(app_commands.Choice(name=f"@{interaction.client.user.display_name}", value=interaction.user.mention))
         if interaction.channel and isinstance(interaction.channel, discord.abc.PrivateChannel):
             choices.extend([
                 app_commands.Choice(name=f"@{member.display_name}", value=member.mention)
