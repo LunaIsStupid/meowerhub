@@ -37,9 +37,9 @@ class MeowBot(commands.Bot):
             print(f"[meowerhub] Failed to load manager: {e}")
 
     async def setup_hook(self):
+        Locale.loadLocales()
         await self._load_extensions()
         await self.tree.sync()
-        Locale.loadLocales()
 
     async def close(self):
         for cog_name, cog in self.cogs.items():
