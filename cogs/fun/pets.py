@@ -128,9 +128,15 @@ class Pets(commands.Cog):
         return await self.process_bytes(await guild.icon.read())
 
     @prefix_petpet.error
-    async def peptet_error(self, ctx, error):
+    async def prefix_petpet_error(self, ctx, error):
         await ctx.reply(error)
 
+    @slash_petpet.error
+    async def slash_petpet_error(self, interaction: discord.Interaction, error):
+        if interaction.response.is_done():
+            await interaction.edit_original_response(content=f"Ran into an error: {error}")
+        else:
+            await interaction.response.send_message(f"Ran into an error: {error}",ephemeral=True)
 
 async def setup(bot: MeowBot):
     await bot.add_cog(Pets(bot))
