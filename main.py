@@ -9,6 +9,7 @@ import pathlib
 
 import aiosqlite
 import discord
+from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -55,6 +56,25 @@ class MeowBot(commands.Bot):
         try: return await commands.UserConverter().convert(ctx, string)
         except commands.UserNotFound: pass
         return string
+
+    async def user_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        search = (current or "").lower().lstrip('@')
+        choices = []
+        if not current and current.lower() in interaction.user.display_name.lower() and interaction.channel and isinstance(interaction.channel, discord.abc.PrivateChannel):
+            choices.append(app_commands.Choice(name=f"@{interaction.user.display_name}", value=interaction.user.mention))
+        if interaction.channel and isinstance(interaction.channel, discord.abc.PrivateChannel):
+            choices.extend([
+                app_commands.Choice(name=f"@{member.display_name}", value=member.mention)
+                for member in interaction.channel.recipients
+                if member and member.display_name and (not search or search in member.display_name.lower())
+            ])
+        elif interaction.guild:
+            choices.extend([
+                app_commands.Choice(name=f"@{member.display_name}", value=member.mention)
+                for member in interaction.guild.members
+                if member.display_name and (not search or search in member.display_name.lower())
+            ])
+        return choices[:25]
 
 
 def main():
