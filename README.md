@@ -10,7 +10,7 @@ only one locale for now
 
 # Stuff Used
 
-- [pet-pet-gif](https://github.com/camprevail/pet-pet-gif) 1.0.0
+- [pet-pet-gif](https://github.com/camprevail/pet-pet-gif) though using [this fork](https://github.com/LunaIsStupid/pet-pet-gif/tree/v1.0.3)
 - [aiosqlite](https://github.com/omnilib/aiosqlite)
 - [discord.py](https://github.com/Rapptz/discord.py)
 
