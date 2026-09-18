@@ -64,7 +64,7 @@ class Starboard(commands.Cog):
         files: list[discord.File] = []
         url = ""
         message_links = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', message.content)
-        if message_links[0]:
+        if len(message_links) > 0:
             link = message_links[0]
             path = urlparse(link).path
             if any(Path(path).name.endswith(ext) for ext in self.EXTENSIONS):
