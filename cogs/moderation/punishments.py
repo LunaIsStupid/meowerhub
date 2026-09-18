@@ -12,6 +12,7 @@ from main import MeowBot
 sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
+import utils.timed
 
 
 # TODO: think about setting up locales
@@ -42,25 +43,22 @@ class ModCommands(commands.Cog):
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
-        duration_seconds: int = 0
-        match = re.match(r"(\d+)([a-zA-Z])", duration)
-        if match:
-            number = int(match.group(1))
-            unit = match.group(2)
-            if unit not in self.UNIT_CONVERTERS:
-                return await ctx.send(f"Unknown duration unit `{unit}`. Use s, m, h, d or w.", ephemeral = True)
-            duration_seconds = number * self.UNIT_CONVERTERS[unit]
-        else:
-            duration_seconds = 2419200
-            duration = "28d"
-            reason = duration + " " + reason
+        # TODO: CHECK IF USER IS ALREADY MUTED
 
-        if duration_seconds > 2419200:
+        seconds, duration, reason = utils.timed.extract(duration + " " + reason)
+        reason = reason or "No reason provided."
+
+        if not seconds:
+            seconds = 2419200
+            duration = "28 days"
+
+        if seconds > 2419200:
             await ctx.send("Duration capped at 28 days.")
-            duration_seconds = 2419200
+            duration = "28 days"
+            seconds = 2419200
 
         try:
-            await member.timeout(timedelta(seconds = duration_seconds), reason = reason)
+            await member.timeout(timedelta(seconds = seconds), reason = reason)
             await ctx.send(Locale.get("mute.result", member = member.mention, duration = duration, reason = reason))
         except Exception as e:
             await ctx.send(Locale.get("mute.fail", error = f"\n-#{e}"), ephemeral = True)
