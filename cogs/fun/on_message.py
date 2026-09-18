@@ -1,5 +1,8 @@
+import ctypes
 import os
 import random
+import sys
+from pathlib import Path
 
 import discord
 from discord.ext import commands
@@ -8,23 +11,24 @@ from main import MeowBot
 
 from . import _settings as settings
 
-import sys
 sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
 
 class OnMessage(commands.Cog):
-    DICE_MAX_MULT = 8193
-    DICE_MAX_DICE = 8193
+    DICE_MAX_MULT = 10000000000
+    DICE_MAX_DICE = 10000000000
     MENTION_REPLY = os.getenv("MENTION_REPLY") or "haii"
 
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
+        self.dicelib = ctypes.CDLL(Path() / "utils" / "native" / "libdice.so")
+        self.dicelib.dice.argtypes =  [ctypes.c_uint64, ctypes.c_uint64, ctypes.c_uint64, ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64)]
+        self.dicelib.dice.restype = None
 
     def parse_dice(self, string, prefix):
-        mult, chips = string[len(prefix):].replace(" ", "").lower().split("d")  # haha balatro im so funny
-        chips, *adv = chips.replace("-", "+-").split("+")
-        return int(mult) if mult else 1, int(chips), sum(int(p) for p in adv)
+        mult, chips = string[len(prefix):].split("d") # haha balatro im so funny
+        return int(mult) if mult else 1, int(chips)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -35,12 +39,21 @@ class OnMessage(commands.Cog):
             return await message.reply(self.MENTION_REPLY)
 
         # dice
-        mult, dice, adv = self.parse_dice(message.content, self.bot.command_prefix)
-        if mult and 0 < mult < self.DICE_MAX_MULT and dice and 0 < dice < self.DICE_MAX_DICE:
-            a = 0
-            for i in range(mult):
-                a+=min(dice, max(1, random.randint(1, dice)+adv))
-            return await message.reply(str(a))
+        mult, dice = self.parse_dice(message.content, self.bot.command_prefix)
+        if mult and 0 < mult <= self.DICE_MAX_MULT and dice and 0 < dice <= self.DICE_MAX_DICE:
+            result = await self.roll(mult,dice)
+            return await message.reply(str(result))
+
+
+    async def roll(self, n: int, d: int) -> int:
+        if not (0 <= n < 0xFFFFFFFFFFFFFFFF and 0 <= d < 0xFFFFFFFFFFFFFFFF):
+            raise ValueError("Inputs exceed uint64 bounds")
+        seed = random.getrandbits(64)
+        out_l = ctypes.c_uint64()
+        out_u = ctypes.c_uint64()
+        self.dicelib.dice(seed, n, d, ctypes.byref(out_l), ctypes.byref(out_u), )
+        return (out_u.value << 64) | out_l.value
+
 
 async def setup(bot: MeowBot):
     await bot.add_cog(OnMessage(bot))
