@@ -56,11 +56,12 @@ class Starboard(commands.Cog):
         except:
             color = None
         embed: discord.Embed = discord.Embed(
-            description=f"{message.content}\n[Jump!]({message.jump_url})",
             url=message.jump_url,
             color=color if color and color != discord.Colour(0) else settings.DEFAULT_COLOR,
             timestamp=message.created_at,
         )
+
+        embed.add_field(name=f"{message.author.display_name}", value=f"{message.content}\n[Jump!]({message.jump_url})")
 
         embed.set_author(
             name=message.author.display_name,
@@ -70,16 +71,10 @@ class Starboard(commands.Cog):
         embed.set_footer(text=f"{message.id} | meower's hub bot")
 
         reply_embed: discord.Embed | None = None
-        if message.reference is not None and isinstance(message.reference.resolved, discord.Message): 
-            reply_embed = discord.Embed(
-                description=f"Replies to:\n{message.reference.resolved.content}\n[Jump!]({message.reference.jump_url})",
-                url=message.reference.jump_url,
-                color= settings.DEFAULT_COLOR,
-                timestamp=message.reference.resolved.created_at,
-            )
-            reply_embed.set_author(
-                name=message.reference.resolved.author.display_name,
-                icon_url=message.reference.resolved.author.display_avatar,
+        if message.reference is not None and isinstance(message.reference.resolved, discord.Message):
+            embed.add_field(
+                name=f"Replied to {message.reference.resolved.author.display_name}",
+                value=f"{message.reference.resolved.content}\n[Jump!]({message.reference.jump_url})"
             )
 
         attachment_count = 0
