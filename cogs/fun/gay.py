@@ -10,7 +10,7 @@ from main import MeowBot
 from . import _settings as settings
 
 sys.path.append("...")
-import utils.reuse as reuse
+from utils import reuse
 from utils.locales import Locale
 
 
@@ -44,11 +44,8 @@ class HowGay(commands.Cog):
         if idx == 0: return "what?"
         return self.GAY_REPLIES[list(self.GAY_REPLIES.keys())[idx]]
 
-    @reuse.hybrid_cmd("howgay")
-    @reuse.cmd_describe("howgay", ["someone"])
-    @reuse.guild_and_app
-    async def howgay(self, ctx: commands.Context, someone: str):
-        user = await self.bot.extract_user(ctx, someone)
+
+    async def howgay(self, ctx, user: discord.Member | discord.User | str) -> discord.Embed | str:
         name = None
         color = None
         override_id = None
@@ -71,7 +68,8 @@ class HowGay(commands.Cog):
                 if ctx.guild:
                     name += f" in {ctx.guild.name}"
                     override_id = ctx.guild.id
-        if not name: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
+        if not name:
+            return Locale.get("error.no_members_arg")
 
         color = color if color and color != discord.Colour.default() else settings.DEFAULT_COLOR
         random_gay = random.randint(self.GAY_MIN, self.GAY_MAX)
@@ -85,12 +83,33 @@ class HowGay(commands.Cog):
         )
         embed.color = color
         embed.set_footer(text=desc)
+        return embed
 
+    @reuse.cmd("howgay")
+    async def prefix_howgay(self, ctx: commands.Context, someone: str):
+        user = await self.bot.extract_user(ctx, someone)
+        embed = await self.howgay(ctx, user)
+        if not isinstance(embed, discord.Embed): return await ctx.reply(embed) # embed replied
         await ctx.reply(embed=embed)
 
-    @howgay.error
+    @reuse.app_cmd("howgay")
+    @reuse.cmd_describe("howgay", ["user"])
+    @reuse.guild_and_app
+    async def slash_howgay(self, interaction: discord.Interaction, user: discord.User):
+        embed = await self.howgay(interaction.context, user)
+        if not isinstance(embed, discord.Embed): return await interaction.response.send_message(embed)
+        return await interaction.response.send_message(embed=embed)
+
+    @prefix_howgay.error
     async def howgay_error(self, ctx, error):
         await ctx.reply(error)
+
+    @slash_howgay.error
+    async def slash_howgay_error(self, interaction:discord.Interaction, error):
+        if interaction.response.is_done():
+            await interaction.response.edit_message(content=error)
+        else:
+            await interaction.response.send_message(error)
 
 async def setup(bot: MeowBot):
     await bot.add_cog(HowGay(bot))

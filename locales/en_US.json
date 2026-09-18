@@ -18,7 +18,7 @@
     "petpet.result": "{petter} has pet {petted}",
 
     "howgay.desc": "Check how gay someone is!",
-    "howgay.someone": "Who to check gayness levels..",
+    "howgay.user": "Who to check gayness levels..",
     "howgay.result": "🏳️‍🌈 {name} {to_be} {gay}% gay!",
 
     "mute.desc": "Mute a member",
