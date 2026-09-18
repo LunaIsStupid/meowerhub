@@ -1,5 +1,12 @@
 {
     "error.no_members_arg": "Please mention at least one member.",
+    "error.no_bot_perms": "I do not have the `{perm}` permission required for this.",
+    "error.user_role_lower": "You cannot do moderation actions to members with higher (or equal) role than yours.",
+    "error.bot_role_lower": "I cannot do moderation actions to members with higher (or equal) role than me.",
+    "error.author_user": "You cannot do moderation actions to yourself.",
+    "error.bot_user": "You cannot do this moderation action to a bot.",
+
+    "overall.fail": "There was an error executing this command: {error}",
 
     "petpet.desc": "Pet people!",
     "petpet.user1": "Someone to pet!",
@@ -10,7 +17,41 @@
 
     "howgay.desc": "Check how gay someone is!",
     "howgay.someone": "Who to check gayness levels..",
-    "howgay.result": "🏳️‍🌈 {name} {to_be} {gay}% gay!"
+    "howgay.result": "🏳️‍🌈 {name} {to_be} {gay}% gay!",
 
+    "mute.desc": "Mute a member",
+    "mute.member": "The member to mute",
+    "mute.duration": "Duration (e.g., 10m, 1h, 7d), defaults to 28d",
+    "mute.reason": "Reason for the mute",
+    "mute.result": "{member} muted for {duration}. Reason: `{reason}`",
+    "mute.fail": "Could not mute that member: {error}",
+    "mute.duration.capped": "Duration capped at 28 days.",
 
+    "unmute.desc": "Unmute a member",
+    "unmute.result": "{member} successfully unmuted.",
+    "unmute.fail": "Could not unmute that member: {error}",
+
+    "kick.desc": "Kick a member",
+    "kick.member": "The member to kick",
+    "kick.reason": "Reason for the kick",
+    "kick.result": "{member} successfully kicked.",
+    "kick.fail": "Could not kick that member: {error}",
+
+    "ban.desc": "Ban a member",
+    "ban.member": "The member to ban",
+    "ban.duration": "The number of days worth of messages to delete from the user in a range of 0 to 7 days. Defaults to 0 days (forever)",
+    "ban.reason": "Reason for the kick",
+    "ban.result": "{member} has been banned for {duration}. Reason: {reason}",
+    "ban.fail": "Could not ban that member: {error}",
+
+    "unban.desc": "Unban a member",
+    "unban.member": "The member to unban",
+    "unban.result": "{member} has been unbanned successfully.",
+    "unban.fail": "Could not unban that member: {error}",
+
+    "warn.desc": "Warn a member, irreversable",
+    "warn.member": "The member to warn",
+    "warn.reason": "Reason for the warn",
+    "warn.result": "{member} successfully warned. Reason: {reason}",
+    "warn.fail": "Could not warn that member: {error}"
 }
