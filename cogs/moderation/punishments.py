@@ -24,7 +24,7 @@ class ModCommands(commands.Cog):
     @reuse.hybrid_cmd("mute")
     @reuse.cmd_describe("mute", ["member", "duration", "reason"])
     @reuse.guild_only
-    @reuse.check_permissions(moderate_members=True)
+    @reuse.check_permissions(moderate_members = True)
     async def mute(
         self, ctx: commands.Context, member: discord.Member,
         duration: str = "28d", *, reason: str = "No reason provided.",
@@ -35,12 +35,12 @@ class ModCommands(commands.Cog):
         """
 
         if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral=True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral=True) # TODO: make custom oneline assertion
+            return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral = True)
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
         if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
         duration_seconds: int = 0
         match = re.match(r"(\d+)([a-zA-Z])", duration)
@@ -48,7 +48,7 @@ class ModCommands(commands.Cog):
             number = int(match.group(1))
             unit = match.group(2)
             if unit not in self.UNIT_CONVERTERS:
-                return await ctx.send(f"Unknown duration unit `{unit}`. Use s, m, h, d or w.", ephemeral=True)
+                return await ctx.send(f"Unknown duration unit `{unit}`. Use s, m, h, d or w.", ephemeral = True)
             duration_seconds = number * self.UNIT_CONVERTERS[unit]
         else:
             duration_seconds = 2419200
@@ -60,40 +60,40 @@ class ModCommands(commands.Cog):
             duration_seconds = 2419200
 
         try:
-            await member.timeout(timedelta(seconds=duration_seconds), reason=reason)
+            await member.timeout(timedelta(seconds = duration_seconds), reason = reason)
             await ctx.send(Locale.get("mute.result", member = member.mention, duration = duration, reason = reason))
         except Exception as e:
-            await ctx.send(Locale.get("mute.fail", error=f"\n-#{e}"), ephemeral=True)
+            await ctx.send(Locale.get("mute.fail", error = f"\n-#{e}"), ephemeral = True)
 
 
     @reuse.hybrid_cmd("unmute")
     @reuse.cmd_describe("unmute", ["member"])
     @reuse.guild_only
-    @reuse.check_permissions(moderate_members=True)
+    @reuse.check_permissions(moderate_members = True)
     async def unmute(self, ctx, member: discord.Member):
         """Unmutes a member.
         Usage:
         `!unmute <member>`"""
 
         if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral=True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral=True) # TODO: make custom oneline assertion
+            return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral = True)
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
         if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)
-
+            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
+        
         try:
             await member.timeout(None)
             await ctx.send(Locale.get("unmute.result", member = member.mention))
         except Exception as e:
-            await ctx.send(Locale.get("unmute.fail", error=f"\n-#{e}"), ephemeral=True)
+            await ctx.send(Locale.get("unmute.fail", error = f"\n-#{e}"), ephemeral = True)
 
 
     @reuse.hybrid_cmd("kick")
     @reuse.cmd_describe("kick", ["member", "reason"])
     @reuse.guild_only
-    @reuse.check_permissions(moderate_members=True)
+    @reuse.check_permissions(moderate_members = True)
     async def kick(
         self, ctx, member: discord.Member,
         *, reason: str = "No reason provided."
@@ -104,24 +104,24 @@ class ModCommands(commands.Cog):
         """
 
         if not ctx.guild.me.guild_permissions.kick_members: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "kick members"), ephemeral=True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral=True) # TODO: make custom oneline assertion
+            return await ctx.send(Locale.get("error.no_bot_perms", perm = "kick members"), ephemeral = True)
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
         if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)    
 
         try:
-            await member.kick(reason=reason)
+            await member.kick(reason = reason)
             await ctx.send(Locale.get("kick.result", member = member.mention, reason = reason))
         except Exception as e:
-            await ctx.send(Locale.get("kick.fail", error=f"\n-#{e}"), ephemeral=True)
+            await ctx.send(Locale.get("kick.fail", error = f"\n-#{e}"), ephemeral = True)
 
 
     @reuse.hybrid_cmd("ban")
     @reuse.cmd_describe("ban", ["member", "days_str", "reason"])
     @reuse.guild_only
-    @reuse.check_permissions(moderate_members=True)
+    @reuse.check_permissions(moderate_members = True)
     async def ban(
         self, ctx, member: discord.Member, days_str: str = "0",
         *, reason: str = "No reason provided."
@@ -131,12 +131,12 @@ class ModCommands(commands.Cog):
         `!ban <user> <days to purge> <reason>`
         """
         if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral=True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral=True) # TODO: make custom oneline assertion
+            return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral = True)
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
         if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
         delete_message_days: int = 0
         try: delete_message_days = min(7, max(0, int(days_str)))
@@ -152,24 +152,24 @@ class ModCommands(commands.Cog):
         #     return await ctx.send("You cannot ban a member with a higher role than you.")
         #   for now let it be commented, in case we really need it, but if its confirmed it works perfectly in any case, then drop that
         try:
-            await ctx.guild.ban(member, delete_message_days=delete_message_days, reason=reason)
-            await ctx.send(f"{member.mention} has been banned. Reason: {reason}")
-        except discord.HTTPException as e:
-            await ctx.send(f"Could not ban member: \n-# {e}")
+            await ctx.guild.ban(member, delete_message_days = delete_message_days, reason = reason)
+            await ctx.send(Locale.get("ban.result", member = member.mention, duration = f"{delete_message_days} days" if delete_message_days else "eternity", reason = reason))
+        except Exception as e:
+            await ctx.send(Locale.get("ban.fail", error = f"\n-#{e}"), ephemeral = True)
 
 
     @reuse.hybrid_cmd("unban")
     @reuse.cmd_describe("unban", ["member"])
     @reuse.guild_only
-    @reuse.check_permissions(moderate_members=True)
+    @reuse.check_permissions(moderate_members = True)
     async def unban(self, ctx, member: discord.User):
         """Unbans a member.
         Usage:
         `!unban <member>`"""
 
         if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral=True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral=True) # TODO: make custom oneline assertion
+            return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral = True)
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
 
         try:
             await ctx.guild.unban(member)
@@ -180,7 +180,7 @@ class ModCommands(commands.Cog):
     @reuse.hybrid_cmd("warn")
     @reuse.cmd_describe("warn", ["member", "reason"])
     @reuse.guild_only
-    @reuse.check_permissions(moderate_members=True)
+    @reuse.check_permissions(moderate_members = True)
     async def warn(
         self, ctx: commands.Context, member: discord.Member,
         *, reason: str = "No reason provided."
@@ -189,12 +189,12 @@ class ModCommands(commands.Cog):
         Usage:
         `!warn <member> [reason]`"""
         # Passthrough method so it gets grouped with the moderation commands, but logs the warn.
-        if member.bot: return await ctx.send(Locale.get("error.bot_user"), ephemeral=True) # TODO: make custom oneline assertion
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral=True) # TODO: make custom oneline assertion
+        if member.bot: return await ctx.send(Locale.get("error.bot_user"), ephemeral = True) # TODO: make custom oneline assertion
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
         if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)
+            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
         logger: commands.Cog | Logging | None = self.bot.get_cog("Logging")
         if not logger: return await ctx.send("Couldn't find logging command, warn failed.") # idk maybe move in locales
@@ -210,7 +210,7 @@ class ModCommands(commands.Cog):
     @unban.error
     @warn.error
     async def error(self, ctx, error):
-        await ctx.reply(Locale.get("overall.fail", error=error))
+        await ctx.reply(Locale.get("overall.fail", error = error))
         # if you need custom behavior, then add new error function, no need to make separate functions for each command
 
 
