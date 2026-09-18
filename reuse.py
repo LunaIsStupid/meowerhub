@@ -23,7 +23,7 @@ def check_permissions(**kwargs):
         discord.app_commands.checks.has_permissions(**kwargs)
     )
 
-def hybrid(key: str):
+def hybrid_cmd(key: str):
     return commands.hybrid_command(name = key, description = Locale.getFormatted(f"{key}.desc"))
 
 def app_cmd(key: str):

@@ -43,7 +43,7 @@ class HowGay(commands.Cog):
         if idx == 0: return "what?"
         return self.GAY_REPLIES[list(self.GAY_REPLIES.keys())[idx]]
 
-    @reuse.hybrid("howgay")
+    @reuse.hybrid_cmd("howgay")
     @reuse.cmd_describe("howgay", ["someone"])
     @reuse.guild_and_app
     async def howgay(self, ctx: commands.Context, someone: str):
