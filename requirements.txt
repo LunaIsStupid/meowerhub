@@ -8,9 +8,10 @@ discord-py==2.7.1
 frozenlist==1.8.0
 idna==3.19
 multidict==6.8.0
+pet-pet-gif @ git+https://github.com/LunaIsStupid/pet-pet-gif.git@cd6fd076b772008ee22515b3960b4b0be2bb6aca
 pillow==12.3.0
 propcache==0.5.2
 python-dotenv==1.2.3
+setuptools==84.0.0
+timelength==3.0.4
 yarl==1.24.5
-git+https://github.com/LunaIsStupid/pet-pet-gif.git@v1.0.3
-setuptools
