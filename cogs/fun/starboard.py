@@ -116,7 +116,6 @@ class Starboard(commands.Cog):
 
     async def process_starred(self, message: discord.Message, bypass: bool = False):
         if not message.guild: return
-        if message.author.id == self.bot.user.id: return # is current bot's message
 
         starboard_channel = await self.get_starboard_channel(message.guild)
         if not starboard_channel: return # starboard channel is invalid

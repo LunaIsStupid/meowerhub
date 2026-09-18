@@ -34,7 +34,7 @@ if __name__ == "__main__":
     print(extract("100 hours 100 hours wow you can stack them"))
     print(extract("wow so empty"))
     print(extract("2s * 5s"))
-    print(extract("2s + 2s"))
+    print(extract("2s + 2s")) # 4, noted
     print(extract("2s - 2s")) # 4??? why?????
     print(extract("2s = 2s"))
     print(extract("2s 2m"))
