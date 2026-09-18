@@ -1,4 +1,4 @@
-import bisect
+import os
 import random
 
 import discord
@@ -16,7 +16,7 @@ from utils.locales import Locale
 class OnMessage(commands.Cog):
     DICE_MAX_MULT = 8193
     DICE_MAX_DICE = 8193
-    MENTION_REPLY = "<a:wavey:1550519578344554616>"
+    MENTION_REPLY = os.getenv("MENTION_REPLY") or "haii"
 
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
