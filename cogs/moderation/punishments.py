@@ -12,7 +12,7 @@ from main import MeowBot
 sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
-import utils.timed
+from utils import timed
 
 
 # TODO: think about setting up locales
@@ -45,7 +45,7 @@ class ModCommands(commands.Cog):
 
         # TODO: CHECK IF USER IS ALREADY MUTED
 
-        seconds, duration, reason = utils.timed.extract(duration + " " + reason)
+        seconds, duration, reason = timed.extract(duration + " " + reason)
         reason = reason or "No reason provided."
 
         if not seconds:
@@ -80,7 +80,7 @@ class ModCommands(commands.Cog):
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
-        
+
         try:
             await member.timeout(None)
             await ctx.send(Locale.get("unmute.result", member = member.mention))
@@ -107,7 +107,7 @@ class ModCommands(commands.Cog):
         if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)    
+            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
         try:
             await member.kick(reason = reason)
