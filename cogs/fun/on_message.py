@@ -30,7 +30,7 @@ class OnMessage(commands.Cog):
         if message.author.bot: return
 
         # on mentioned
-        if self.bot.user in message.mentions and message.content.startswith("hi"):
+        if self.bot.user in message.mentions and "hi" in message.content.lower():
             return await message.reply(self.MENTION_REPLY)
 
         # dice
