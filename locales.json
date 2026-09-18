@@ -5,6 +5,8 @@
     "error.bot_role_lower": "I cannot do moderation actions to members with higher (or equal) role than me.",
     "error.author_user": "You cannot do moderation actions to yourself.",
     "error.bot_user": "You cannot do this moderation action to a bot.",
+    "error.missing_reply": "You must reply to a message to use this command.",
+    "error.message_not_resolved": "Couldn't resolve the message to process for this command.",
 
     "overall.fail": "There was an error executing this command: {error}",
 
@@ -53,5 +55,7 @@
     "warn.member": "The member to warn",
     "warn.reason": "Reason for the warn",
     "warn.result": "{member} successfully warned. Reason: {reason}",
-    "warn.fail": "Could not warn that member: {error}"
+    "warn.fail": "Could not warn that member: {error}",
+
+    "starthis.success": "Successfully starred {author_ping}'s message!"
 }

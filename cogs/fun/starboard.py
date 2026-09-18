@@ -4,6 +4,8 @@ import discord
 from discord.ext import commands
 from discord.state import RawReactionActionEvent
 
+import reuse
+from locales import Locale
 from main import MeowBot
 
 from . import _settings as settings
@@ -112,7 +114,7 @@ class Starboard(commands.Cog):
         if not guild_id or not sb_message_id: return # invalid message row data
         return await channel.fetch_message(sb_message_id)
 
-    async def process_starred(self, message: discord.Message):
+    async def process_starred(self, message: discord.Message, bypass: bool = False):
         if not message.guild: return
         if message.author.id == self.bot.user.id: return # is current bot's message
 
@@ -124,7 +126,7 @@ class Starboard(commands.Cog):
         stars = await self.get_stars(message)
 
         starboard_message_row = await self.get_starboard_message_row(message.id)
-        if not starboard_message_row and stars >= self.REQUIRED:
+        if not starboard_message_row and stars >= self.REQUIRED or bypass:
             attachments = await self.generate_starboard_attachments(message, stars)
             content = await self.generate_starboard_message(message, stars)
             if not attachments or not content: return # invalid content or attachments
@@ -187,6 +189,20 @@ class Starboard(commands.Cog):
     async def on_raw_reaction_clear_emoji(self, payload: RawReactionActionEvent):
         await self.on_reactions_changed(payload)
 
+    @reuse.cmd(key="starthis")
+    @commands.has_permissions(administrator=True)
+    async def starthis_cmd(self, ctx: commands.Context, message_id: str | None = None):
+        if not ctx.message.reference and not message_id: return await ctx.reply(Locale.get("error.missing_reply"))
+        message: discord.Message | None = None
+        if message_id and ctx.guild:
+            for channel in ctx.guild.channels:
+                if not isinstance(channel, discord.abc.Messageable): continue
+                try: message = await channel.fetch_message(int(message_id))
+                except discord.NotFound: pass
+        elif ctx.message.reference and ctx.message.reference.message_id: message = await ctx.channel.fetch_message(ctx.message.reference.message_id)
+        if not message: return await ctx.reply(Locale.get("error.message_not_resolved"))
+        await self.process_starred(message, bypass=True)
+        return await ctx.reply(Locale.get("starthis.success", author_ping=message.author.mention))
 
 async def setup(bot: MeowBot):
     await bot.add_cog(Starboard(bot))
