@@ -55,7 +55,6 @@ class Starboard(commands.Cog):
             color = member.color
         except:
             color = None
-
         embed: discord.Embed = discord.Embed(
             description=f"{message.content}\n[Jump!]({message.jump_url})",
             url=message.jump_url,
@@ -69,6 +68,19 @@ class Starboard(commands.Cog):
         )
 
         embed.set_footer(text=f"{message.id} | meower's hub bot")
+
+        reply_embed: discord.Embed | None = None
+        if message.reference is not None and isinstance(message.reference.resolved, discord.Message): 
+            reply_embed = discord.Embed(
+                description=f"Replies to:\n{message.reference.resolved.content}\n[Jump!]({message.reference.jump_url})",
+                url=message.reference.jump_url,
+                color= settings.DEFAULT_COLOR,
+                timestamp=message.reference.resolved.created_at,
+            )
+            reply_embed.set_author(
+                name=message.reference.resolved.author.display_name,
+                icon_url=message.reference.resolved.author.display_avatar,
+            )
 
         attachment_count = 0
         files: list[discord.File] = []
@@ -95,6 +107,7 @@ class Starboard(commands.Cog):
                         print(f"Failed to grab an attachment... {attachment.filename}")
 
         embed.set_image(url=urls)
+        if reply_embed: message.embeds.append(reply_embed)
         message.embeds.append(embed)
 
         return files, message.embeds
