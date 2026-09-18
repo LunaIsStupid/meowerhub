@@ -1,18 +1,18 @@
 import re
+import sys
 from datetime import timedelta
 from typing import cast
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from cogs.moderation.logging import Logging
 from main import MeowBot
 
-import sys
 sys.path.append("...")
-import reuse
-from locales import Locale
+from utils import reuse
+from utils.locales import Locale
+
 
 # TODO: think about setting up locales
 class ModCommands(commands.Cog):
@@ -46,7 +46,7 @@ class ModCommands(commands.Cog):
         match = re.match(r"(\d+)([a-zA-Z])", duration)
         if match:
             number = int(match.group(1))
-            unit = match.group(2)  
+            unit = match.group(2)
             if unit not in self.UNIT_CONVERTERS:
                 return await ctx.send(f"Unknown duration unit `{unit}`. Use s, m, h, d or w.", ephemeral=True)
             duration_seconds = number * self.UNIT_CONVERTERS[unit]
@@ -82,7 +82,7 @@ class ModCommands(commands.Cog):
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral=True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)
-        
+
         try:
             await member.timeout(None)
             await ctx.send(Locale.get("unmute.result", member = member.mention))
@@ -109,7 +109,7 @@ class ModCommands(commands.Cog):
         if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral=True)
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)    
+            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral=True)
 
         try:
             await member.kick(reason=reason)
@@ -146,8 +146,8 @@ class ModCommands(commands.Cog):
         # try: guild_member = await ctx.guild.fetch_member(member.id)
         # except discord.NotFound: return await ctx.send("Couldn't find the user")
         # except discord.HTTPException as e: return await ctx.send(f"Failed to fetch member for banning: \n-# {e}")
-        # 
-        # 
+        #
+        #
         # if guild_member and ctx.author.top_role.position <= member.top_role.position:
         #     return await ctx.send("You cannot ban a member with a higher role than you.")
         #   for now let it be commented, in case we really need it, but if its confirmed it works perfectly in any case, then drop that

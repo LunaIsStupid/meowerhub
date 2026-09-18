@@ -4,9 +4,9 @@ import discord
 from discord.ext import commands
 from discord.state import RawReactionActionEvent
 
-import reuse
-from locales import Locale
 from main import MeowBot
+from utils import reuse
+from utils.locales import Locale
 
 from . import _settings as settings
 

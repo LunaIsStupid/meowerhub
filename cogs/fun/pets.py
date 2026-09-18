@@ -1,5 +1,6 @@
-from calendar import c
 import random
+import sys
+from calendar import c
 from io import BytesIO
 
 import discord
@@ -11,10 +12,10 @@ from main import MeowBot
 
 from . import _settings as settings
 
-import sys
 sys.path.append("...")
-import reuse
-from locales import Locale
+from utils import reuse
+from utils.locales import Locale
+
 
 class Pets(commands.Cog):
     PET_REPLIES: list[str] = [

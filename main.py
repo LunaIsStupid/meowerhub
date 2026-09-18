@@ -13,9 +13,8 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from help import MeowHelp
-
-from locales import Locale
+from utils.help import MeowHelp
+from utils.locales import Locale
 
 load_dotenv()
 
