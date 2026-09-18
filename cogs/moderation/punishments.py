@@ -34,12 +34,12 @@ class ModCommands(commands.Cog):
         `!mute <user> <duration> <reason>`
         """
 
-        if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom oneline assertion
+        if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
+        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
         duration_seconds: int = 0
@@ -75,12 +75,12 @@ class ModCommands(commands.Cog):
         Usage:
         `!unmute <member>`"""
 
-        if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom oneline assertion
+        if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
+        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
         
         try:
@@ -103,12 +103,12 @@ class ModCommands(commands.Cog):
         `!kick <user> <reason>`
         """
 
-        if not ctx.guild.me.guild_permissions.kick_members: # TODO: make custom oneline assertion
+        if not ctx.guild.me.guild_permissions.kick_members: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.no_bot_perms", perm = "kick members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
+        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)    
 
         try:
@@ -130,12 +130,12 @@ class ModCommands(commands.Cog):
         Usage:
         `!ban <user> <days to purge> <reason>`
         """
-        if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom oneline assertion
+        if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
+        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
         delete_message_days: int = 0
@@ -167,9 +167,9 @@ class ModCommands(commands.Cog):
         Usage:
         `!unban <member>`"""
 
-        if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom oneline assertion
+        if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
 
         try:
             await ctx.guild.unban(member)
@@ -189,11 +189,11 @@ class ModCommands(commands.Cog):
         Usage:
         `!warn <member> [reason]`"""
         # Passthrough method so it gets grouped with the moderation commands, but logs the warn.
-        if member.bot: return await ctx.send(Locale.get("error.bot_user"), ephemeral = True) # TODO: make custom oneline assertion
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom oneline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom oneline assertion
+        if member.bot: return await ctx.send(Locale.get("error.bot_user"), ephemeral = True) # TODO: make custom inline assertion
+        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
+        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom oneline assertion
+        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
         logger: commands.Cog | Logging | None = self.bot.get_cog("Logging")

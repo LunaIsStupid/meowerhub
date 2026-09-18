@@ -10,8 +10,8 @@ from . import _settings as settings
 
 import sys
 sys.path.append("...")
-import reuse
-from locales import Locale
+from utils import reuse
+from utils.locales import Locale
 
 class OnMessage(commands.Cog):
     DICE_MAX_MULT = 8193
