@@ -1,12 +1,15 @@
 # First custom cog for this bot...
 import aiosqlite
 import discord
+import re
 from discord.ext import commands
 from discord.state import RawReactionActionEvent
 
 from main import MeowBot
 from utils import reuse
 from utils.locales import Locale
+from urllib.parse import urlparse
+from pathlib import Path
 
 from . import _settings as settings
 
@@ -29,6 +32,7 @@ class Starboard(commands.Cog):
     CHECK_SB_CHANNEL_QUERY = """
         SELECT sb_channel FROM guilds WHERE guild_id = ?
     """
+    EXTENSIONS = [".png", ".webp", ".jpg", ".jpeg", ".gif", ".avif"]
 
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
@@ -55,41 +59,26 @@ class Starboard(commands.Cog):
             color = member.color
         except:
             color = None
-        embed: discord.Embed = discord.Embed(
-            url=message.jump_url,
-            color=color if color and color != discord.Colour(0) else settings.DEFAULT_COLOR,
-            timestamp=message.created_at,
-        )
-
-        embed.add_field(name=f"{message.author.display_name}", value=f"{message.content}\n[Jump!]({message.jump_url})")
-
-        embed.set_author(
-            name=message.author.display_name,
-            icon_url=message.author.display_avatar,
-        )
-
-        embed.set_footer(text=f"{message.id} | meower's hub bot")
-
-        reply_embed: discord.Embed | None = None
-        if message.reference is not None and isinstance(message.reference.resolved, discord.Message):
-            embed.add_field(
-                name=f"Replied to {message.reference.resolved.author.display_name}",
-                value=f"{message.reference.resolved.content}\n[Jump!]({message.reference.jump_url})"
-            )
 
         attachment_count = 0
         files: list[discord.File] = []
-        urls = ""
+        url = ""
+        message_links = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', message.content)
+        if message_links[0]:
+            link = message_links[0]
+            path = urlparse(link).path
+            if any(Path(path).name.endswith(ext) for ext in self.EXTENSIONS):
+                url = link
+                attachment_count += 1
+
         if message.attachments:
             for attachment in message.attachments:
                 if (
-                    attachment.filename.endswith(".png")
-                    or attachment.filename.endswith(".jpg")
-                    or attachment.filename.endswith(".jpeg")
+                    any(attachment.filename.endswith(ext) for ext in self.EXTENSIONS)
                     and attachment_count != 1
                 ):
                     attachment_count += 1
-                    urls = attachment.url
+                    url = attachment.url
                 else:
                     try:
                         file: discord.File = await attachment.to_file(use_cached=False)
@@ -101,11 +90,34 @@ class Starboard(commands.Cog):
                     ):
                         print(f"Failed to grab an attachment... {attachment.filename}")
 
-        embed.set_image(url=urls)
-        if reply_embed: message.embeds.append(reply_embed)
-        message.embeds.append(embed)
+        embed: discord.Embed = discord.Embed(
+            url=message.jump_url,
+            color=color if color and color != discord.Colour(0) else settings.DEFAULT_COLOR,
+            timestamp=message.created_at,
+        )
 
-        return files, message.embeds
+        embed.add_field(name=f"{message.author.display_name}", value=f"{message.content.replace(url,"")}\n[Jump!]({message.jump_url})")
+
+        embed.set_author(
+            name=message.author.display_name,
+            icon_url=message.author.display_avatar,
+        )
+
+        embed.set_footer(text=f"{message.id} | meower's hub bot")
+
+        if message.reference is not None and isinstance(message.reference.resolved, discord.Message):
+            embed.add_field(
+                name=f"Replied to {message.reference.resolved.author.display_name}",
+                value=f"{message.reference.resolved.content}\n[Jump!]({message.reference.jump_url})"
+            )
+        embed.set_image(url=url)
+        filtered_embeds = [
+                msg_embed for msg_embed in message.embeds
+                if msg_embed.url != url and msg_embed.thumbnail.url != url and msg_embed.image.url != url
+            ]
+        filtered_embeds.append(embed)
+
+        return files, filtered_embeds
 
     async def get_starboard_channel(self, guild: discord.Guild):
         async with self.bot.db.execute(self.CHECK_SB_CHANNEL_QUERY, (guild.id,),) as cursor:
