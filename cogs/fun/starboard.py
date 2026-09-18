@@ -184,7 +184,6 @@ class Starboard(commands.Cog):
 
         await self.process_starred(message)
 
-
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         await self.on_reactions_changed(payload)
@@ -201,7 +200,7 @@ class Starboard(commands.Cog):
     async def on_raw_reaction_clear_emoji(self, payload: RawReactionActionEvent):
         await self.on_reactions_changed(payload)
 
-    @reuse.cmd(key="starthis")
+    @reuse.cmd("starthis")
     @commands.has_permissions(administrator=True)
     async def starthis_cmd(self, ctx: commands.Context, message_id: str | None = None):
         if not ctx.message.reference and not message_id: return await ctx.reply(Locale.get("error.missing_reply"))

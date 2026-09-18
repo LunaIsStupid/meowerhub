@@ -22,8 +22,9 @@ class OnMessage(commands.Cog):
         self.bot: MeowBot = bot
 
     def parse_dice(self, string, prefix):
-        mult, chips = string[len(prefix):].split("d") # haha balatro im so funny
-        return int(mult) if mult else 1, int(chips)
+        mult, chips = string[len(prefix):].replace(" ", "").lower().split("d")  # haha balatro im so funny
+        chips, *adv = chips.replace("-", "+-").split("+")
+        return int(mult) if mult else 1, int(chips), sum(int(p) for p in adv)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -34,11 +35,11 @@ class OnMessage(commands.Cog):
             return await message.reply(self.MENTION_REPLY)
 
         # dice
-        mult, dice = self.parse_dice(message.content, self.bot.command_prefix)
+        mult, dice, adv = self.parse_dice(message.content, self.bot.command_prefix)
         if mult and 0 < mult < self.DICE_MAX_MULT and dice and 0 < dice < self.DICE_MAX_DICE:
             a = 0
             for i in range(mult):
-                a+=random.randint(1, dice)
+                a+=min(dice, max(1, random.randint(1, dice)+adv))
             return await message.reply(str(a))
 
 async def setup(bot: MeowBot):
