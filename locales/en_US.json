@@ -62,5 +62,17 @@
     "purge.result": "Successfully purrrrrged {count} messages.",
     "purge.fail": "Could not purge: {error}",
 
+    "afk.desc": "Set your AFK",
+    "afk.message": "AFK message",
+
+    "forceafk.desc": "Force someone AFK",
+    "forceafk.user": "User to force AFK",
+    "forceafk.message": "AFK message",
+
+    "resetafk.desc": "Reset someone's AFK",
+    "resetafk.user": "User to reset AFK",
+    
+
+
     "starthis.success": "Successfully starred {author_ping}'s message!"
 }

@@ -1,6 +1,5 @@
 import bisect
 import random
-import sys
 
 import discord
 from discord.ext import commands
@@ -9,6 +8,7 @@ from main import MeowBot
 
 from . import _settings as settings
 
+import sys
 sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
