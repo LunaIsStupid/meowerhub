@@ -49,10 +49,10 @@ class AFK(commands.Cog):
 
 
     @reuse.hybrid_cmd("resetafk")
-    @reuse.cmd_describe("resetafk", ["message", "member"])
+    @reuse.cmd_describe("resetafk", ["member"])
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
-    async def resetafk(self, ctx: commands.Context, member: discord.Member, *, message: str):
+    async def resetafk(self, ctx: commands.Context, member: discord.Member):
         await self.bot.db.afk.rem(ctx.guild.id, member.id)
 
         if self.afk_users[ctx.guild.id][member.id]: del self.afk_users[ctx.guild.id][member.id]
