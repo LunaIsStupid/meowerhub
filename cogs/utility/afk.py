@@ -41,7 +41,7 @@ class AFK(commands.Cog):
         await self.bot.db.afk.upsert(ctx.guild.id, member.id, message)
 
         if ctx.guild.id not in self.afk_users: self.afk_users[ctx.guild.id] = {}
-        self.afk_users[ctx.guild.id][ctx.author.id] = message
+        self.afk_users[ctx.guild.id][member.id] = message
 
         if message.startswith("meow"): await ctx.reply(f"Mrow mew miau mow {member.mention}: `{message}`", allowed_mentions=reuse.NO_MENTION, ephemeral=True)
         else: await ctx.reply(f"AFK set for {member.mention}: `{message}`", allowed_mentions=reuse.NO_MENTION, ephemeral=True)
@@ -55,7 +55,7 @@ class AFK(commands.Cog):
     async def resetafk(self, ctx: commands.Context, member: discord.Member, *, message: str):
         await self.bot.db.afk.rem(ctx.guild.id, member.id)
 
-        del self.afk_users[ctx.guild.id][ctx.author.id]
+        if self.afk_users[ctx.guild.id][member.id]: del self.afk_users[ctx.guild.id][member.id]
 
         await ctx.reply(f"AFK reset for {member.mention}", allowed_mentions=reuse.NO_MENTION, ephemeral=True)
         # TODO: locales
@@ -77,6 +77,7 @@ class AFK(commands.Cog):
 
         if message.author.id in guild_afk and not message.content.startswith(">>"):
             await self.bot.db.afk.rem(guild_id, user_id)
+            del self.afk_users[message.guild.id][message.author.id]
             await message.reply("You are no longer afk!")
             return  # Avoid duplicate messages if the author mentions themself
 
@@ -86,6 +87,11 @@ class AFK(commands.Cog):
                 await message.reply(f"{mention.display_name} is afk: `{afk_msg}`")
                 return  # to prevent spam exit here
 
+    @afk.error
+    @resetafk.error
+    @forceafk.error
+    async def error(self, ctx, error):
+        await ctx.reply(Locale.get("overall.fail", error = error))
 
 async def setup(bot: MeowBot):
     await bot.add_cog(AFK(bot))
