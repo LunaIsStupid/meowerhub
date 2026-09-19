@@ -16,8 +16,8 @@ from utils import reuse
 from utils.locales import Locale
 
 class OnMessage(commands.Cog):
-    DICE_MAX_MULT = 10000000000
-    DICE_MAX_DICE = 10000000000
+    DICE_MAX_MULT = 18446744073709551600
+    DICE_MAX_DICE = 18446744073709551600
     MENTION_REPLY = os.getenv("MENTION_REPLY") or "haii"
 
     def __init__(self, bot: MeowBot):
