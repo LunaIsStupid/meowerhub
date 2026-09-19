@@ -15,13 +15,14 @@ from dotenv import load_dotenv
 
 from utils.help import MeowHelp
 from utils.locales import Locale
+from utils.db import DB
 
 load_dotenv()
 
 
 class MeowBot(commands.Bot):
     _watcher: asyncio.Task
-    db: aiosqlite.Connection
+    db: DB
 
     def __init__(self, ext_dir: str, intents, **options) -> None:
         super().__init__(intents=intents, **options)
@@ -37,6 +38,7 @@ class MeowBot(commands.Bot):
 
     async def setup_hook(self):
         Locale.loadLocales()
+        self.db = await DB().setup()
         await self._load_extensions()
         await self.tree.sync()
 

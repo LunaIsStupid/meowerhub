@@ -160,7 +160,7 @@ class ModCommands(commands.Cog):
     @reuse.cmd_describe("unban", ["member"])
     @reuse.guild_only
     @reuse.check_permissions(moderate_members = True)
-    async def unban(self, ctx, member: discord.User):
+    async def unban(self, ctx: commands.Context, member: discord.User):
         """Unbans a member.
         Usage:
         `!unban <member>`"""
@@ -171,9 +171,9 @@ class ModCommands(commands.Cog):
 
         try:
             await ctx.guild.unban(member)
-            await ctx.send(f"{member.mention} has been unbanned successfully.")
+            await ctx.send(Locale.get("unban.result", member = member.mention))
         except discord.HTTPException as e:
-            await ctx.send(f"Could not unban member: \n-# {e}")
+            await ctx.send(Locale.get("unban.fail", error = f"\n-#{e}"), ephemeral = True)
 
     @reuse.hybrid_cmd("warn")
     @reuse.cmd_describe("warn", ["member", "reason"])
@@ -199,7 +199,25 @@ class ModCommands(commands.Cog):
         if not hasattr(logger, "log_warn"): return await ctx.send("Expected the logging cog, got something else instead.")
         logger = cast(Logging, logger)
         await logger.log_warn(ctx, member, reason)
-        await ctx.send(Locale.get("error.user_role_lower", member = member.mention, reason = reason))
+        await ctx.send(Locale.get("warn.result", member = member.mention, reason = reason, id = id))
+
+    @reuse.hybrid_cmd("purge")
+    @reuse.cmd_describe("purge", ["count"])
+    @reuse.guild_only
+    @reuse.check_permissions(manage_messages = True)
+    async def purge(self, ctx: commands.Context, count: int):
+        if not isinstance(ctx.channel, discord.Thread | discord.ForumChannel | discord.TextChannel): return ctx.reply("cant do it here", ephemeral = True)
+        # TODO: reuse.GUILD_TEXT_CHANNEL
+        # TODO: locales
+
+        if not ctx.guild.me.guild_permissions.manage_messages: # TODO: make custom inline assertion
+            return await ctx.send(Locale.get("error.no_bot_perms", perm = "manage messages"), ephemeral = True)
+
+        try:
+            await ctx.channel.purge(limit=count)
+            await ctx.send(Locale.get("purge.result", count = count))
+        except discord.HTTPException as e:
+            await ctx.send(Locale.get("purge.fail", error = f"\n-#{e}"), ephemeral = True)
 
     @mute.error
     @unmute.error
@@ -207,6 +225,7 @@ class ModCommands(commands.Cog):
     @ban.error
     @unban.error
     @warn.error
+    @purge.error
     async def error(self, ctx, error):
         await ctx.reply(Locale.get("overall.fail", error = error))
         # if you need custom behavior, then add new error function, no need to make separate functions for each command

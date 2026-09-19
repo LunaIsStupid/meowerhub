@@ -23,7 +23,6 @@ class CogManager(commands.Cog):
         return await super().cog_load()
 
     async def _auto_load(self):
-        await self.bot.load_extension("cogs._database")
         for file in sorted(self.cog_dir.rglob("*.py")):
             if file.stem.startswith("_") or file.stem == "manager":
                 continue

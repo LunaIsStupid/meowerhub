@@ -19,19 +19,6 @@ class Starboard(commands.Cog):
     REQUIRED = 3
     ALLOW_SELF_REACTION = False
 
-    CHECK_QUERY = """
-        SELECT guild_id, starboard_message_id FROM starboard WHERE message_id = ?
-        """
-    CREATE_QUERY = """
-        INSERT INTO starboard (message_id, guild_id, starboard_message_id)
-        VALUES (?, ?, ?)
-    """
-    DELETE_QUERY = """
-        DELETE FROM starboard WHERE message_id = ?
-    """
-    CHECK_SB_CHANNEL_QUERY = """
-        SELECT sb_channel FROM guilds WHERE guild_id = ?
-    """
     EXTENSIONS = [".png", ".webp", ".jpg", ".jpeg", ".gif", ".avif"]
 
     def __init__(self, bot: MeowBot):
@@ -120,19 +107,13 @@ class Starboard(commands.Cog):
         return files, filtered_embeds
 
     async def get_starboard_channel(self, guild: discord.Guild):
-        async with self.bot.db.execute(self.CHECK_SB_CHANNEL_QUERY, (guild.id,),) as cursor:
-            row = await cursor.fetchone()
-            if not row: return # no starboard channel row for current server
-            return await guild.fetch_channel(row["sb_channel"])
-
-    async def get_starboard_message_row(self, message_id: int) -> aiosqlite.Row | None:
-        async with self.bot.db.execute(self.CHECK_QUERY, (message_id,)) as cursor:
-            return await cursor.fetchone()
+        row = await self.bot.db.guilds.get(guild.id)
+        if not row: return # no starboard channel row for current server
+        return await guild.fetch_channel(row["sb_channel"])
 
     async def get_starboard_message(self, channel, row: aiosqlite.Row):
-        guild_id, sb_message_id = row
-        if not guild_id or not sb_message_id: return # invalid message row data
-        return await channel.fetch_message(sb_message_id)
+        if not row["guild_id"] or not row["starboard_message_id"]: return # invalid message row data
+        return await channel.fetch_message(row["starboard_message_id"])
 
     async def process_starred(self, message: discord.Message, bypass: bool = False):
         if not message.guild: return
@@ -144,7 +125,7 @@ class Starboard(commands.Cog):
 
         stars = await self.get_stars(message)
 
-        starboard_message_row = await self.get_starboard_message_row(message.id)
+        starboard_message_row = await self.bot.db.starboard.get(message.id)
         if not starboard_message_row and stars >= self.REQUIRED or bypass:
             attachments = await self.generate_starboard_attachments(message, stars)
             content = await self.generate_starboard_message(message, stars)
@@ -155,16 +136,14 @@ class Starboard(commands.Cog):
             except discord.HTTPException: return
             if not sent_message: return # didnt sent message for some reason
 
-            await self.bot.db.execute(self.CREATE_QUERY, (message.id, message.guild.id, sent_message.id))
-            await self.bot.db.commit()
+            await self.bot.db.starboard.add(message.id, message.guild.id, sent_message.id)
         elif starboard_message_row and stars <= 0:
             starboard_message = await self.get_starboard_message(starboard_channel, starboard_message_row)
             if not starboard_message: return # no starboard message to remove
 
             await starboard_message.delete()
 
-            await self.bot.db.execute(self.DELETE_QUERY, (message.id,))
-            await self.bot.db.commit()
+            await self.bot.db.starboard.rem(message.id)
         elif starboard_message_row:
             starboard_message = await self.get_starboard_message(starboard_channel, starboard_message_row)
             if not starboard_message: return # no starboard message to edit

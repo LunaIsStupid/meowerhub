@@ -5,6 +5,9 @@ from typing import TypedDict
 import discord
 from discord.ext import commands
 
+import sys
+sys.path.append("..")
+from main import MeowBot
 
 class LogChannels(TypedDict):
     msg_logs: int | None
@@ -14,37 +17,29 @@ class LogChannels(TypedDict):
 
 class Logging(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: MeowBot = bot
         self.channels: dict[str, LogChannels] = {}
         self.message_counter: dict[str, int] = {}
+
+    def set_channels_data(self, row):
+        data: LogChannels = {
+            "msg_logs": row["msg_logs"],
+            "member_logs": row["member_logs"],
+            "mod_logs": row["mod_logs"],
+        }
+        self.channels[str(row["guild_id"])] = data
 
     async def populate_channels(self):
         """This populates the self.channels cache and refills it with the data from the DB"""
         if not self.channels:
-            async with self.bot.db.execute("SELECT * FROM guilds") as cursor:
-                rows = await cursor.fetchall()
-                for row in rows:
-                    data: LogChannels = {
-                        "msg_logs": row["msg_logs"],
-                        "member_logs": row["member_logs"],
-                        "mod_logs": row["mod_logs"],
-                    }
-                    guild_id: str = str(row["guild_id"])
-                    self.channels[guild_id] = data
+            rows = await self.bot.db.guilds.get_many()
+            for row in rows: self.set_channels_data(row)
 
-    async def update_channels(self, guild_id: str):
+
+    async def update_channels(self, guild_id: int):
         """This updates self.channels when a change is made with the setup command."""
-        async with self.bot.db.execute(
-            "SELECT * FROM guilds WHERE guild_id = ?", (guild_id,)
-        ) as cursor:
-            row = await cursor.fetchone()
-            data: LogChannels = {
-                "msg_logs": row["msg_logs"],
-                "member_logs": row["member_logs"],
-                "mod_logs": row["mod_logs"],
-            }
-            guild_id = str(row["guild_id"])
-            self.channels[guild_id] = data
+        row = await self.bot.db.guilds.get(guild_id)
+        if row: self.set_channels_data(row)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -393,7 +388,7 @@ class Logging(commands.Cog):
             embed: discord.Embed = discord.Embed(
                 title="Member Left",
                 timestamp=datetime.datetime.now(datetime.UTC),
-                color=discord.Color.from_str("#555555"),
+                color=discord.Colour(0x555555),
             )
 
             if member.display_avatar.url is not None:
@@ -456,7 +451,7 @@ class Logging(commands.Cog):
             kick_embed: discord.Embed = discord.Embed(
                 title="Member Kicked",
                 timestamp=datetime.datetime.now(datetime.UTC),
-                color=discord.Color.from_str("#555555"),
+                color=discord.Colour(0x555555),
             )
 
             if kicker.display_avatar.url is not None:
@@ -559,16 +554,8 @@ class Logging(commands.Cog):
 
     async def log_warn(self, ctx, member: discord.Member, reason: str):
         """Core of the warn command"""
-        query = """
-            INSERT INTO warnings (guild_id, user_id, moderator_id, reason)
-            VALUES (?, ?, ?, ?)
-        """
-        async with self.bot.db.cursor() as cursor:
-            await cursor.execute(
-                query, (ctx.guild.id, member.id, ctx.author.id, reason)
-            )
-            warning_id = cursor.lastrowid
-        await self.bot.db.commit()
+
+        warning_id = await self.bot.db.warnings.add(ctx.guild.id, member.id, ctx.author.id, reason)
 
         try: await member.send(f"You were warned in {ctx.guild.name} for `{reason}`\nWarning ID: `{warning_id}`")
         except discord.Forbidden: pass  # cant dm the member
@@ -589,7 +576,7 @@ class Logging(commands.Cog):
         embed.set_thumbnail(url=member.display_avatar.url)
         embed.add_field(name="Reason:", value=reason, inline=True)
         embed.add_field(name="Punished By:", value=ctx.author.mention)
-        embed.set_footer(text=f"{member.id}")
+        embed.set_footer(text=f"№{warning_id} - {member.id}")
 
         channel_id = guild_channels.get("mod_logs")
         if not channel_id: return

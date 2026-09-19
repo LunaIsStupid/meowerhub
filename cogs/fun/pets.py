@@ -1,5 +1,4 @@
 import random
-import sys
 from calendar import c
 from io import BytesIO
 
@@ -12,6 +11,7 @@ from main import MeowBot
 
 from . import _settings as settings
 
+import sys
 sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale

@@ -57,5 +57,10 @@
     "warn.result": "{member} successfully warned. Reason: {reason}",
     "warn.fail": "Could not warn that member: {error}",
 
+    "purge.desc": "Purge a channel",
+    "purge.count": "Amount of messages to purge",
+    "purge.result": "Successfully purrrrrged {count} messages.",
+    "purge.fail": "Could not purge: {error}",
+
     "starthis.success": "Successfully starred {author_ping}'s message!"
 }

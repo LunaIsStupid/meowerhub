@@ -8,42 +8,42 @@ from main import MeowBot
 
 from ..moderation.logging import Logging
 
+import sys
+sys.path.append("...")
+from utils.db import DB
 
 async def embed_helper(
-    db: aiosqlite.Connection, ctx: commands.Context
+    db: DB, ctx: commands.Context
 ) -> discord.Embed | None:
     embed = discord.Embed(
         title="Setup Panel",
         description="Use the menu below to change your server settings.",
         color=discord.Color.blue(),
     )
-    if not ctx.guild:
-        return  # Cannot continue, bail.
-    async with db.execute(
-        "SELECT * FROM guilds WHERE guild_id = ?", (ctx.guild.id,)
-    ) as cursor:
-        row = await cursor.fetchone()
-        if not row:
-            return  # bail out
-        items = dict(zip(row.keys(), row))
-        items.pop("guild_id", None)
-        for setting, value in items.items():
-            setting_pretty = setting.replace("_", " ").title()
-            if setting_pretty.startswith("Sb"):
-                setting_pretty = "Starboard Channel"
-            if value:
-                try:
-                    channel = await ctx.guild.fetch_channel(value)
-                    channel_pretty = channel.mention
-                except discord.NotFound:
-                    channel_pretty = f"Missing Channel \n-# `{value}`"
-                except discord.Forbidden:
-                    channel_pretty = f"Inaccessible channel \n-# `{value}`"
-                except ValueError:
-                    channel_pretty = f"Invalid ID format\n-# `{value}`"
-            else:
-                channel_pretty = "None set yet."
-            embed.add_field(name=setting_pretty, value=channel_pretty, inline=True)
+    if not ctx.guild: return  # Cannot continue, bail.
+
+    row = await db.guilds.get(ctx.guild.id)
+    if not row: return  # bail out
+
+    items = dict(zip(row.keys(), row))
+    items.pop("guild_id", None)
+    for setting, value in items.items():
+        setting_pretty = setting.replace("_", " ").title()
+        if setting_pretty.startswith("Sb"):
+            setting_pretty = "Starboard Channel"
+        if value:
+            try:
+                channel = await ctx.guild.fetch_channel(value)
+                channel_pretty = channel.mention
+            except discord.NotFound:
+                channel_pretty = f"Missing Channel \n-# `{value}`"
+            except discord.Forbidden:
+                channel_pretty = f"Inaccessible channel \n-# `{value}`"
+            except ValueError:
+                channel_pretty = f"Invalid ID format\n-# `{value}`"
+        else:
+            channel_pretty = "None set yet."
+        embed.add_field(name=setting_pretty, value=channel_pretty, inline=True)
 
     return embed
 
@@ -109,22 +109,17 @@ class ChannelModal(discord.ui.Modal, title="Set Channel"):
             )
             return
 
-        db = client.db
-        await db.execute(
-            f"UPDATE guilds SET {self.setting} = ? WHERE guild_id = ?",
-            (channel.id, self.guild_id),
-        )
+        await client.db.guilds.upd(self.guild_id, autocommit=True, **{self.setting: channel.id})
 
         logging_cog: Logging | commands.Cog | None = self.bot.get_cog("Logging")
 
-        await db.commit()
         if logging_cog and hasattr(logging_cog, "update_channels"):
             logging_cog = cast(Logging, logging_cog)
-            await logging_cog.update_channels(guild_id=str(ctx.guild.id))
+            await logging_cog.update_channels(guild_id=ctx.guild.id)
         else:
-            print("Couldnt fetch logging cog correctly")
+            print("Could not fetch logging cog correctly")
 
-        embed = await embed_helper(db, ctx)
+        embed = await embed_helper(client.db, ctx)
         if not embed:
             await interaction.response.send_message(
                 "Failed to make embed! Report this issue as soon as possible"
