@@ -206,7 +206,7 @@ class ModCommands(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(manage_messages = True)
     async def purge(self, ctx: commands.Context, count: int):
-        if not isinstance(ctx.channel, discord.Thread | discord.ForumChannel | discord.TextChannel): return ctx.reply("cant do it here", ephemeral = True)
+        if not isinstance(ctx.channel, discord.Thread | discord.ForumChannel | discord.TextChannel): return await ctx.reply("cant do it here", ephemeral = True)
         # TODO: reuse.GUILD_TEXT_CHANNEL
         # TODO: locales
 
