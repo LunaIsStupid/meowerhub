@@ -194,12 +194,13 @@ class ModCommands(commands.Cog):
         if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
             return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
 
+        warning_id = await self.bot.db.warnings.add(ctx.guild.id, member.id, ctx.author.id, reason)
         logger: commands.Cog | Logging | None = self.bot.get_cog("Logging")
         if not logger: return await ctx.send("Couldn't find logging command, warn failed.") # idk maybe move in locales
         if not hasattr(logger, "log_warn"): return await ctx.send("Expected the logging cog, got something else instead.")
         logger = cast(Logging, logger)
-        await logger.log_warn(ctx, member, reason)
-        await ctx.send(Locale.get("warn.result", member = member.mention, reason = reason, id = id))
+        await logger.log_warn(ctx, member, reason, warning_id)
+        await ctx.send(Locale.get("warn.result", member = member.mention, reason = reason, id = warning_id))
 
     @reuse.hybrid_cmd("purge")
     @reuse.cmd_describe("purge", ["count"])
