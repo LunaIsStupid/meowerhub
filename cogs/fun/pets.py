@@ -145,7 +145,7 @@ class Pets(commands.Cog):
     @reuse.hybrid_cmd("forcepetreply")
     @reuse.cmd_describe("forcepetreply", ["member", "message"])
     @reuse.guild_only
-    async def forcepetreply(self, ctx: commands.Context, member: discord.Member, message: str = ""):
+    async def forcepetreply(self, ctx: commands.Context, member: discord.Member, *, message: str = ""):
         if not (isinstance(ctx.author, discord.Member) and (ctx.author.guild_permissions.administrator or ctx.author.id == reuse.IDS.ZEPHYR)):
             return await ctx.reply("Insufficient permissions", ephemeral=True)
         

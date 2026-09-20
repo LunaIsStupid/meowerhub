@@ -273,7 +273,7 @@ class Pet:
             INSERT INTO afk (guild_id, user_id, message)
             VALUES (?, ?, ?)
             ON CONFLICT (user_id, guild_id) DO UPDATE SET
-                message = excluded.message,
+                message = excluded.message
             """, (guild_id, user_id, message)
         )
         if autocommit: await self.db.commit()
