@@ -52,9 +52,11 @@ class Pets(commands.Cog):
         self.REPLY_CACHE = {}
         rows = await db.pet.get_many()
         for row in rows:
-            if not self.REPLY_CACHE.get(row["guild_id"]): self.REPLY_CACHE[row["guild_id"]] = {}
-            self.REPLY_CACHE[row["guild_id"]][row["user_id"]]
+            self.update_petpet_cache_entry(row["guild_id"], row["user_id"], row["message"])
 
+    def update_petpet_cache_entry(self, guild_id: int, user_id: int, message: str):
+        if not self.REPLY_CACHE.get(guild_id): self.REPLY_CACHE[guild_id] = {}
+        self.REPLY_CACHE[guild_id, user_id] = message
 
     @commands.command()
     async def pet(self, ctx):
@@ -148,10 +150,12 @@ class Pets(commands.Cog):
             return await ctx.reply("Insufficient permissions", ephemeral=True)
         
         if not message:
-            await self.bot.db.pet.rem(ctx.guild, member.id)
+            await self.bot.db.pet.rem(ctx.guild.id, member.id)
+            del self.REPLY_CACHE[ctx.guild.id][member.id]
             return await ctx.reply(f"Pet message reset for {member.mention}", ephemeral=True)
 
-        await self.bot.db.pet.upsert(ctx.guild, member.id, message)
+        self.update_petpet_cache_entry(ctx.guild.id, member.id, message)
+        await self.bot.db.pet.upsert(ctx.guild.id, member.id, message)
         await ctx.reply(f"Pet message set as `{message}` for {member.mention}", ephemeral=True)
 
     @forcepetreply.error
