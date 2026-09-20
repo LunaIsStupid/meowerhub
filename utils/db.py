@@ -238,6 +238,51 @@ class Afk:
         if autocommit: await self.db.commit()
 
 
+class Pet:
+    def __init__(self, db: aiosqlite.Connection) -> None:
+        self.db = db
+
+    async def setup(self):
+        await self.db.execute("""
+        CREATE TABLE IF NOT EXISTS pet(
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            message TEXT NOT NULL,
+
+            CONSTRAINT fk_pet_guild FOREIGN KEY (guild_id) REFERENCES guilds(guild_id) ON DELETE CASCADE,
+            CONSTRAINT fk_pet_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+
+            PRIMARY KEY (user_id, guild_id)
+        )
+        """)
+        await self.db.commit()
+        print("Afk...")
+        return self
+
+    async def get(self, guild_id: int, user_id: int):
+        async with self.db.execute("SELECT * FROM pet WHERE guild_id = ? AND user_id = ?", (guild_id, user_id)) as cursor:
+            return await cursor.fetchone()
+
+    async def get_many(self, count: int = 0):
+        async with self.db.execute("SELECT * FROM pet") as cursor:
+            if count <= 0: return await cursor.fetchall()
+            else: return await cursor.fetchmany(count)
+
+    async def upsert(self, guild_id: int, user_id: int, message: str, autocommit: bool = True):
+        await self.db.execute("""
+            INSERT INTO afk (guild_id, user_id, message)
+            VALUES (?, ?, ?)
+            ON CONFLICT (user_id, guild_id) DO UPDATE SET
+                message = excluded.message,
+            """, (guild_id, user_id, message)
+        )
+        if autocommit: await self.db.commit()
+
+    async def rem(self, guild_id: int, user_id: int, autocommit: bool = True):
+        await self.db.execute("DELETE FROM pet WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
+        if autocommit: await self.db.commit()
+
+
 class DB:
     db: aiosqlite.Connection
     users: Users
@@ -245,6 +290,7 @@ class DB:
     warnings: Warnings
     starboard: Starboard
     afk: Afk
+    pet: Pet
 
     async def setup(self, path = "database.db"):
         print("Setting up database...")
@@ -258,6 +304,7 @@ class DB:
         self.warnings = await Warnings(self.db).setup()
         self.starboard = await Starboard(self.db).setup()
         self.afk = await Afk(self.db).setup()
+        self.pet = await Pet(self.db).setup()
         print("Database ready!")
         
         return self

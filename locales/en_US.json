@@ -72,6 +72,9 @@
     "resetafk.desc": "Reset someone's AFK",
     "resetafk.user": "User to reset AFK",
     
+    "forcepetreply.desc": "Force someone petpet status",
+    "forcepetreply.member": "User to force petpet status",
+    "forcepetreply.message": "Pet message",
 
 
     "starthis.success": "Successfully starred {author_ping}'s message!"
