@@ -154,6 +154,10 @@ class Pets(commands.Cog):
         await self.bot.db.pet.upsert(ctx.guild, member.id, message)
         await ctx.reply(f"Pet message set as `{message}` for {member.mention}", ephemeral=True)
 
+    @forcepetreply.error
+    async def forcepetreply_error(self, ctx, error):
+        await ctx.reply(error)
+    
     @prefix_petpet.error
     async def prefix_petpet_error(self, ctx, error):
         await ctx.reply(error)
