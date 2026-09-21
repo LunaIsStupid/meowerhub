@@ -66,7 +66,7 @@ class AFK(commands.Cog):
         if (
             not message.guild
             or message.author.bot
-            or message.content.startswith("!afk")
+            or message.content.startswith(str(self.bot.command_prefix))
         ):
             return  # not in guild, or is a bot, or updating afk message
 
