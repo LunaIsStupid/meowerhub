@@ -76,6 +76,9 @@
     "forcepetreply.member": "User to force petpet status",
     "forcepetreply.message": "Pet message",
 
+    "setpetreply.desc": "Set your petpet status",
+    "setpetreply.message": "Pet message",
+
 
     "starthis.success": "Successfully starred {author_ping}'s message!"
 }

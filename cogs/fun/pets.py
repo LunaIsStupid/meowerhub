@@ -55,7 +55,6 @@ class Pets(commands.Cog):
             self.update_petpet_cache_entry(row["guild_id"], row["user_id"], row["message"])
 
     def update_petpet_cache_entry(self, guild_id: int, user_id: int, message: str):
-        if not self.REPLY_CACHE.get(guild_id): self.REPLY_CACHE[guild_id] = {}
         self.REPLY_CACHE[guild_id, user_id] = message
 
     @commands.command()
@@ -92,7 +91,7 @@ class Pets(commands.Cog):
             mention = member.mention
             if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLIES)})"
             elif member.id == author_id: mention += " (you silly)"
-            elif guild and guild.id in self.REPLY_CACHE and member.id in self.REPLY_CACHE[guild.id]: mention += f" ({self.REPLY_CACHE[guild.id][member.id]})"
+            elif guild and member.id and (guild.id, member.id) in self.REPLY_CACHE: mention += f" ({self.REPLY_CACHE[guild.id, member.id]})"
         elif isinstance(member, discord.Guild):
             mention = f"the whole {member.name}"
         return mention
@@ -142,26 +141,35 @@ class Pets(commands.Cog):
         message = f"{interaction.user.mention} has pet {", ".join(to_ping)}"
         await interaction.response.send_message(content=message, files=files, allowed_mentions=reuse.NO_MENTION)
 
+    async def set_petpet_reply(self, guild_id: int, user_id: int, message: str) -> bool:
+        if not message:
+            await self.bot.db.pet.rem(guild_id, user_id)
+            del self.REPLY_CACHE[guild_id, user_id]
+            return False
+
+        await self.bot.db.pet.upsert(guild_id, user_id, message)
+        self.update_petpet_cache_entry(guild_id, user_id, message)
+        return True
+
+
+    @reuse.hybrid_cmd("setpetreply")
+    @reuse.cmd_describe("setpetreply", ["message"])
+    @reuse.guild_only
+    async def setpetreply(self, ctx: commands.Context, *, message: str = ""):
+        status = await self.set_petpet_reply(ctx.guild.id, ctx.author.id, message) 
+        await ctx.reply(f"Pet message set as `{message}`" if status else "Pet message removed", ephemeral=True)    
+
+
     @reuse.hybrid_cmd("forcepetreply")
     @reuse.cmd_describe("forcepetreply", ["member", "message"])
     @reuse.guild_only
+    @reuse.check_permissions(administrator = True)
     async def forcepetreply(self, ctx: commands.Context, member: discord.Member, *, message: str = ""):
-        if not (isinstance(ctx.author, discord.Member) and (ctx.author.guild_permissions.administrator or ctx.author.id == reuse.IDS.ZEPHYR)):
-            return await ctx.reply("Insufficient permissions", ephemeral=True)
-        
-        if not message:
-            await self.bot.db.pet.rem(ctx.guild.id, member.id)
-            del self.REPLY_CACHE[ctx.guild.id][member.id]
-            return await ctx.reply(f"Pet message reset for {member.mention}", ephemeral=True)
-
-        self.update_petpet_cache_entry(ctx.guild.id, member.id, message)
-        await self.bot.db.pet.upsert(ctx.guild.id, member.id, message)
-        await ctx.reply(f"Pet message set as `{message}` for {member.mention}", ephemeral=True)
+        status = await self.set_petpet_reply(ctx.guild.id, member.id, message) 
+        await ctx.reply(f"Pet message set as `{message}` for {member.mention}" if status else f"Pet message removed for {member.mention}", ephemeral=True)    
 
     @forcepetreply.error
-    async def forcepetreply_error(self, ctx, error):
-        await ctx.reply(error)
-    
+    @setpetreply.error
     @prefix_petpet.error
     async def prefix_petpet_error(self, ctx, error):
         await ctx.reply(error)
