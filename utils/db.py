@@ -270,7 +270,7 @@ class Pet:
 
     async def upsert(self, guild_id: int, user_id: int, message: str, autocommit: bool = True):
         await self.db.execute("""
-            INSERT INTO afk (guild_id, user_id, message)
+            INSERT INTO pet (guild_id, user_id, message)
             VALUES (?, ?, ?)
             ON CONFLICT (user_id, guild_id) DO UPDATE SET
                 message = excluded.message
@@ -306,7 +306,7 @@ class DB:
         self.afk = await Afk(self.db).setup()
         self.pet = await Pet(self.db).setup()
         print("Database ready!")
-        
+
         return self
 
     async def commit(self):
