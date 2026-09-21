@@ -147,8 +147,8 @@ class Pets(commands.Cog):
             del self.REPLY_CACHE[guild_id, user_id]
             return False
 
-        await self.bot.db.pet.upsert(guild_id, user_id, message)
-        self.update_petpet_cache_entry(guild_id, user_id, message)
+        await self.bot.db.pet.upsert(guild_id, user_id, message[:20])
+        self.update_petpet_cache_entry(guild_id, user_id, message[:20])
         return True
 
 
@@ -156,8 +156,8 @@ class Pets(commands.Cog):
     @reuse.cmd_describe("setpetreply", ["message"])
     @reuse.guild_only
     async def setpetreply(self, ctx: commands.Context, *, message: str = ""):
-        status = await self.set_petpet_reply(ctx.guild.id, ctx.author.id, message) 
-        await ctx.reply(f"Pet message set as `{message}`" if status else "Pet message removed", ephemeral=True)    
+        status = await self.set_petpet_reply(ctx.guild.id, ctx.author.id, message)
+        await ctx.reply(f"Pet message set as `{message[:20]}`" if status else "Pet message removed", ephemeral=True)
 
 
     @reuse.hybrid_cmd("forcepetreply")
@@ -165,8 +165,8 @@ class Pets(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def forcepetreply(self, ctx: commands.Context, member: discord.Member, *, message: str = ""):
-        status = await self.set_petpet_reply(ctx.guild.id, member.id, message) 
-        await ctx.reply(f"Pet message set as `{message}` for {member.mention}" if status else f"Pet message removed for {member.mention}", ephemeral=True)    
+        status = await self.set_petpet_reply(ctx.guild.id, member.id, message)
+        await ctx.reply(f"Pet message set as `{message[:20]}` for {member.mention}" if status else f"Pet message removed for {member.mention}", ephemeral=True)
 
     @forcepetreply.error
     @setpetreply.error
