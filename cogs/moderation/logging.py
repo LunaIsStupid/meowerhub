@@ -1,5 +1,6 @@
 import datetime
 import time
+import io
 from typing import TypedDict
 
 import discord
@@ -8,6 +9,7 @@ from discord.ext import commands
 import sys
 sys.path.append("..")
 from main import MeowBot
+from utils import reuse
 
 class LogChannels(TypedDict):
     msg_logs: int | None
@@ -21,14 +23,15 @@ class Logging(commands.Cog):
         self.channels: dict[str, LogChannels] = {}
         self.message_counter: dict[str, int] = {}
 
-    async def fetch_log_channel(self, guild: discord.Guild, name: str) -> discord.TextChannel | None:
+    async def fetch_log_channel(self, guild: discord.Guild, name: str) -> reuse.TEXT_CHANNEL | None:
         guild_channels = self.channels.get(str(guild.id), {})
         channel_id = guild_channels.get(name)
         if not channel_id: return # nowhere to log
         channel = await guild.fetch_channel(channel_id)
         if not isinstance(channel, discord.abc.Messageable): return # cant send anything here
+        return channel
 
-    async def fetch_log_channel_or_fallback(self, guild: discord.Guild, name: str, fallback_name: str | None = None) -> discord.TextChannel | None:
+    async def fetch_log_channel_or_fallback(self, guild: discord.Guild, name: str, fallback_name: str | None = None) -> reuse.TEXT_CHANNEL | None:
         return await self.fetch_log_channel(guild, name) or (await self.fetch_log_channel(guild, fallback_name) if fallback_name else None)
 
     def set_channels_data(self, row):
@@ -377,6 +380,34 @@ class Logging(commands.Cog):
         try: await channel.send(embed=embed)
         except discord.Forbidden: return  # cant send the message
         except discord.HTTPException: return  # cant send anywhere
+
+    async def log_purge(self, ctx: commands.Context, executor: discord.Member, messages: list[discord.Message]):
+        """Logger of the warn command"""
+
+        channel = await self.fetch_log_channel(executor.guild, "mod_logs")
+        if not channel: return # cant log anywhere
+
+        embed = discord.Embed(
+            title="Purrrge",
+            timestamp=datetime.datetime.now(datetime.UTC),
+            color=discord.Color.blurple(),
+        )
+        embed.set_author(name=f"{executor.name}", icon_url=executor.display_avatar.url)
+        embed.set_thumbnail(url=executor.display_avatar.url)
+        embed.add_field(name="Amount:", value=len(messages), inline=True)
+        embed.add_field(name="At:", value=ctx.channel.mention)
+
+        text = ""
+        for message in messages:
+            text += f"{message.created_at} {message.author.name} {message.content} {"(edited "+str(message.edited_at)+")" if message.edited_at else ""}\n"
+
+        files = []
+        if text: files.append(discord.File(io.BytesIO(text.encode("utf-8")), filename="purrrged.txt"))
+
+        try: await channel.send(embed=embed, files = files)
+        except discord.Forbidden: return  # cant send the message
+        except discord.HTTPException: return  # cant send anywhere
+
 
 
 async def setup(bot):

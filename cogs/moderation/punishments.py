@@ -215,7 +215,12 @@ class ModCommands(commands.Cog):
             return await ctx.send(Locale.get("error.no_bot_perms", perm = "manage messages"), ephemeral = True)
 
         try:
-            await ctx.channel.purge(limit=count)
+            messages = await ctx.channel.purge(limit=count)
+            logger: commands.Cog | Logging | None = self.bot.get_cog("Logging")
+            if not logger: return await ctx.send("Couldn't find logging command, warn failed.") # idk maybe move in locales
+            if not hasattr(logger, "log_warn"): return await ctx.send("Expected the logging cog, got something else instead.")
+            logger = cast(Logging, logger)
+            await logger.log_purge(ctx, ctx.author, messages)
             await ctx.send(Locale.get("purge.result", count = count))
         except discord.HTTPException as e:
             await ctx.send(Locale.get("purge.fail", error = f"\n-#{e}"), ephemeral = True)

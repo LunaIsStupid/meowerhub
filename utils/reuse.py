@@ -45,6 +45,7 @@ class IDS: # readability, add when needed
 
 USER = discord.User | discord.Member | discord.ClientUser
 GUILD = discord.Guild
+TEXT_CHANNEL = discord.TextChannel | discord.StageChannel | discord.VoiceChannel | discord.Thread
 
 NO_MENTION = discord.AllowedMentions(users=False,roles=False)
 
