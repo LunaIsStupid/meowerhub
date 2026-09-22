@@ -29,8 +29,8 @@ class AFK(commands.Cog):
         if ctx.guild.id not in self.afk_users: self.afk_users[ctx.guild.id] = {}
         self.afk_users[ctx.guild.id][ctx.author.id] = message
 
-        if message.startswith("meow"): await ctx.reply(f"Mrow mew miau: `{message}`", ephemeral=True)
-        else: await ctx.reply(f"AFK set: `{message}`", ephemeral=True)
+        if message.startswith("meow"): await ctx.reply(f"Mrow mew miau: {message}", ephemeral=True)
+        else: await ctx.reply(f"AFK set: {message}", ephemeral=True)
         # TODO: locales
 
     @reuse.hybrid_cmd("forceafk")
@@ -43,8 +43,8 @@ class AFK(commands.Cog):
         if ctx.guild.id not in self.afk_users: self.afk_users[ctx.guild.id] = {}
         self.afk_users[ctx.guild.id][member.id] = message
 
-        if message.startswith("meow"): await ctx.reply(f"Mrow mew miau mow {member.mention}: `{message}`", allowed_mentions=reuse.NO_MENTION, ephemeral=True)
-        else: await ctx.reply(f"AFK set for {member.mention}: `{message}`", allowed_mentions=reuse.NO_MENTION, ephemeral=True)
+        if message.startswith("meow"): await ctx.reply(f"Mrow mew miau mow {member.mention}: {message}", allowed_mentions=reuse.NO_MENTION, ephemeral=True)
+        else: await ctx.reply(f"AFK set for {member.mention}: {message}", allowed_mentions=reuse.NO_MENTION, ephemeral=True)
         # TODO: locales
 
 
@@ -84,7 +84,7 @@ class AFK(commands.Cog):
         for mention in message.mentions:
             if mention.id in guild_afk:
                 afk_msg = guild_afk[mention.id]
-                await message.reply(f"{mention.display_name} is afk: `{afk_msg}`")
+                await message.reply(f"{mention.display_name} is afk: {afk_msg}")
                 return  # to prevent spam exit here
 
     @afk.error
