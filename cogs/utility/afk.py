@@ -74,7 +74,7 @@ class AFK(commands.Cog):
         ): return  # not in guild, or is a bot, or is a command
 
 
-        if (message.guild, message.author.id) in self.cache and not message.content.startswith(">>"):
+        if (message.guild.id, message.author.id) in self.cache and not message.content.startswith(">>"):
             text = await self.reset_afk(message.guild.id, message.author.id)
             return await message.reply(Locale.get("afk.reset"+(".meow" if text.startswith("meow") else ""), message = text))
             # Avoid duplicate messages if the author mentions themself
