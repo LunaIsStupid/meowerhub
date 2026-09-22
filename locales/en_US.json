@@ -15,6 +15,12 @@
     "petpet.user2": "Someone to pet!",
     "petpet.user3": "I'm sure you get the idea",
     "petpet.user4": "Someone to pet!",
+    "petpet.entry": "{petted}",
+    "petpet.entry.guild": "the whole {petted}",
+    "petpet.entry.custom": "{petted} ({custom})",
+    "petpet.entry.join": ", ",
+    "petpet.entry.join.last": "and ",
+    "petpet.custom.self": "you silly",
     "petpet.result": "{petter} has pet {petted}",
 
     "howgay.desc": "Check how gay someone is!",
@@ -64,20 +70,35 @@
 
     "afk.desc": "Set your AFK",
     "afk.message": "AFK message",
+    "afk.result": "AFK set: `{message}`",
+    "afk.result.meow": "MROW mew: `{message}`",
+    "afk.reset": "You are no longer AFK!",
+    "afk.reset.meow": "Meou maw mow meow MROW!",
+    "afk.reminder": "{member} is AFK: `{message}`",
+    "afk.reminder.meow": "{member} mew MROW: `{message}`",
 
     "forceafk.desc": "Force someone AFK",
     "forceafk.user": "User to force AFK",
     "forceafk.message": "AFK message",
+    "forceafk.result": "AFK forced for {member}: `{message}`",
+    "forceafk.result.meow": "MROW meow mow {member}: `{message}`",
 
     "resetafk.desc": "Reset someone's AFK",
     "resetafk.user": "User to reset AFK",
-    
-    "forcepetreply.desc": "Force someone petpet status",
-    "forcepetreply.member": "User to force petpet status",
-    "forcepetreply.message": "Pet message",
+    "resetafk.result": "AFK reset for {member}",
+    "resetafk.result.meow": "MROW mew mow {member}",
 
-    "setpetreply.desc": "Set your petpet status",
+    "setpetreply.desc": "Set your pet message",
     "setpetreply.message": "Pet message",
+    "setpetreply.result": "Your pet message set as {message}",
+    "setpetreply.reset": "Your pet message reset",
+
+    "forcepetreply.desc": "Force someone pet message",
+    "forcepetreply.member": "User to force pet message",
+    "forcepetreply.message": "Pet message",
+    "forcepetreply.result": "Forced pet message for {member} as {message}",
+    "forcepetreply.reset": "Reset pet message for {member}",
+
 
 
     "starthis.success": "Successfully starred {author_ping}'s message!"

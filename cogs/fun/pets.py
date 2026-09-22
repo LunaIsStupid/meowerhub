@@ -41,21 +41,64 @@ class Pets(commands.Cog):
         "meawwww",
     ]
 
-    REPLY_CACHE = {}
-
     MAX_PETPET_COUNT = 4
+    MAX_MESSAGE_LENGTH = 20
 
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
+        self.cache: dict[tuple[int, int], str] = {}
 
-    async def update_petpet_caches(self, db: DB):
-        self.REPLY_CACHE = {}
-        rows = await db.pet.get_many()
+
+    async def update_caches(self):
+        self.cache = {}
+        rows = await self.bot.db.pet.get_many()
         for row in rows:
-            self.update_petpet_cache_entry(row["guild_id"], row["user_id"], row["message"])
+            self.update_cache_entry(row["guild_id"], row["user_id"], row["message"])  # populate cache
 
-    def update_petpet_cache_entry(self, guild_id: int, user_id: int, message: str):
-        self.REPLY_CACHE[guild_id, user_id] = message
+    def update_cache_entry(self, guild_id: int, member_id: int, message: str):
+        self.cache[guild_id, member_id] = message
+
+    def delete_cache_entry(self, guild_id: int, member_id: int) -> str:
+        return self.cache.pop((guild_id, member_id), "")
+
+    async def set_pet_reply(self, guild_id: int, member_id: int, message: str) -> str:
+        message = message[:self.MAX_MESSAGE_LENGTH]
+        await self.bot.db.pet.upsert(guild_id, member_id, message)
+        self.update_cache_entry(guild_id, member_id, message)
+        return message
+
+    async def reset_pet_reply(self, guild_id: int, member_id: int) -> str:
+        await self.bot.db.pet.rem(guild_id, member_id)
+        message = self.delete_cache_entry(guild_id, member_id)
+        return message
+
+    async def process_message(self, member: reuse.USER | discord.Guild, author_id: int | None = None, guild: discord.Guild | None = None):
+        mention = "error"
+        if isinstance(member, reuse.USER):
+            mention = Locale.get("petpet.entry", petted = member.mention)
+            custom = ""
+            if member.id == self.bot.user.id: custom = random.choice(self.PET_REPLIES)
+            elif member.id == author_id: custom = Locale.get("petpet.custom.self")
+            elif guild and member.id and (guild.id, member.id) in self.cache: custom = self.cache[guild.id, member.id]
+            if custom: mention = Locale.get("petpet.entry.custom", petted = mention, custom = custom)
+        elif isinstance(member, discord.Guild):
+            mention = Locale.get("petpet.entry.guild", petted = member.name)
+        return mention
+
+    async def process_bytes(self, bytes: bytes):
+        source = BytesIO(bytes)
+        dest = BytesIO()
+        petpet.make(source, dest)
+        dest.seek(0)
+        return dest
+
+    async def process_member(self, member: reuse.USER):
+        return await self.process_bytes(await member.display_avatar.read())
+
+    async def process_guild(self, guild: reuse.GUILD):
+        if not guild or not guild.icon: return
+        return await self.process_bytes(await guild.icon.read())
+
 
     @commands.command()
     async def pet(self, ctx):
@@ -81,34 +124,10 @@ class Pets(commands.Cog):
                 to_ping.append(await self.process_message(guild))
                 files.append(discord.File(dest, filename=f"{guild}-petpet.gif"))
             if len(to_ping) >= self.MAX_PETPET_COUNT: break
-        if len(to_ping) > 2: to_ping[-1] = "and " + to_ping[-1]
+        if len(to_ping) > 2: to_ping[-1] = Locale.get("petpet.entry.join.last") + to_ping[-1]
 
         return to_ping, files
 
-    async def process_message(self, member: reuse.USER | discord.Guild, author_id: int | None = None, guild: discord.Guild | None = None):
-        mention = "error"
-        if isinstance(member, reuse.USER):
-            mention = member.mention
-            if member.id == self.bot.user.id: mention += f" ({random.choice(self.PET_REPLIES)})"
-            elif member.id == author_id: mention += " (you silly)"
-            elif guild and member.id and (guild.id, member.id) in self.REPLY_CACHE: mention += f" ({self.REPLY_CACHE[guild.id, member.id]})"
-        elif isinstance(member, discord.Guild):
-            mention = f"the whole {member.name}"
-        return mention
-
-    async def process_bytes(self, bytes: bytes):
-        source = BytesIO(bytes)
-        dest = BytesIO()
-        petpet.make(source, dest)
-        dest.seek(0)
-        return dest
-
-    async def process_member(self, member: reuse.USER):
-        return await self.process_bytes(await member.display_avatar.read())
-
-    async def process_guild(self, guild: reuse.GUILD):
-        if not guild or not guild.icon: return
-        return await self.process_bytes(await guild.icon.read())
 
     @reuse.cmd("petpet")
     async def prefix_petpet(self, ctx: commands.Context,
@@ -122,8 +141,8 @@ class Pets(commands.Cog):
         await ctx.defer()
         to_ping, files = await self.petpet(ctx, ctx.author.id, targets, ctx.guild)
         if not to_ping or not files: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
-        message = Locale.get("petpet.result", petter = ctx.author.mention, petted = ", ".join(to_ping))
-        await ctx.reply(content=message, files=files, allowed_mentions=reuse.NO_MENTION)
+        await ctx.reply(Locale.get("petpet.result", petter = ctx.author.mention, petted = Locale.get("petpet.entry.join").join(to_ping)), files=files, allowed_mentions=reuse.NO_MENTION)
+
 
     @reuse.app_cmd("petpet")
     @reuse.cmd_describe("petpet", ["user1", "user2", "user3", "user4"])
@@ -138,26 +157,15 @@ class Pets(commands.Cog):
         if not targets: return await interaction.response.send_message(Locale.get("error.no_members_arg"), ephemeral=True)
         to_ping, files = await self.petpet(None, interaction.user.id, targets, interaction.guild)
         if not to_ping or not files: return await interaction.response.send_message(Locale.get("error.no_members_arg"), ephemeral=True)
-        message = f"{interaction.user.mention} has pet {", ".join(to_ping)}"
-        await interaction.response.send_message(content=message, files=files, allowed_mentions=reuse.NO_MENTION)
-
-    async def set_petpet_reply(self, guild_id: int, user_id: int, message: str) -> bool:
-        if not message:
-            await self.bot.db.pet.rem(guild_id, user_id)
-            del self.REPLY_CACHE[guild_id, user_id]
-            return False
-
-        await self.bot.db.pet.upsert(guild_id, user_id, message[:20])
-        self.update_petpet_cache_entry(guild_id, user_id, message[:20])
-        return True
+        await interaction.response.send_message(Locale.get("petpet.result", petter = interaction.user.mention, petted = Locale.get("petpet.entry.join").join(to_ping)), files=files, allowed_mentions=reuse.NO_MENTION)
 
 
     @reuse.hybrid_cmd("setpetreply")
     @reuse.cmd_describe("setpetreply", ["message"])
     @reuse.guild_only
     async def setpetreply(self, ctx: commands.Context, *, message: str = ""):
-        status = await self.set_petpet_reply(ctx.guild.id, ctx.author.id, message)
-        await ctx.reply(f"Pet message set as `{message[:20]}`" if status else "Pet message removed", ephemeral=True)
+        message = await self.set_pet_reply(ctx.guild.id, ctx.author.id, message)
+        await ctx.reply(Locale.get("setpetreply."+("result" if message else "reset"), message = message), ephemeral=True)
 
 
     @reuse.hybrid_cmd("forcepetreply")
@@ -165,8 +173,9 @@ class Pets(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def forcepetreply(self, ctx: commands.Context, member: discord.Member, *, message: str = ""):
-        status = await self.set_petpet_reply(ctx.guild.id, member.id, message)
-        await ctx.reply(f"Pet message set as `{message[:20]}` for {member.mention}" if status else f"Pet message removed for {member.mention}", ephemeral=True)
+        message = await self.set_pet_reply(ctx.guild.id, member.id, message)
+        await ctx.reply(Locale.get("forcepetreply."+("result" if message else "reset"), member = member, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
+
 
     @forcepetreply.error
     @setpetreply.error
@@ -183,5 +192,5 @@ class Pets(commands.Cog):
 
 async def setup(bot: MeowBot):
     cog = Pets(bot)
-    await cog.update_petpet_caches(bot.db)
+    await cog.update_caches()
     await bot.add_cog(cog)
