@@ -27,6 +27,7 @@ class Assert:
     
     @classmethod
     def can_moderate(cls, moderator: discord.Member, target: discord.Member, autosend = True):
+        "Checks if target is not guild owner, target is lesser role than moderator, and target is lesser role than bot"
         cls.a(target != target.guild.owner, "error.owner_user", autosend)
         cls.a(moderator == target.guild.owner or moderator.top_role > target.top_role, "error.user_role_lower", autosend)
         cls.a(target.guild.me.top_role > target.top_role, "error.bot_role_lower", autosend)

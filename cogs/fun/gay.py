@@ -102,10 +102,8 @@ class HowGay(commands.Cog):
 
     @slash_howgay.error
     async def slash_howgay_error(self, interaction: discord.Interaction, error):
-        if interaction.response.is_done():
-            await interaction.edit_original_response(content=f"Ran into an error: {error}") # TODO: locales
-        else:
-            await interaction.response.send_message(f"Ran into an error: {error}",ephemeral=True) # TODO: locales
+        if interaction.response.is_done(): await interaction.edit_original_response(content = Locale.get("overall.fail", error = error))
+        else: await interaction.response.send_message(Locale.get("overall.fail", error = error), ephemeral = True)
 
 async def setup(bot: MeowBot):
     await bot.add_cog(HowGay(bot))

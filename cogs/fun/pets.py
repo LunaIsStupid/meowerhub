@@ -16,7 +16,7 @@ sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
 from utils.db import DB
-
+from utils.asserted import Assert
 
 class Pets(commands.Cog):
     PET_REPLIES: list[str] = [
@@ -173,15 +173,14 @@ class Pets(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def forcepetreply(self, ctx: commands.Context, member: discord.Member, *, message: str = ""):
+        Assert.is_not_bot(member)
         message = await self.set_pet_reply(ctx.guild.id, member.id, message)
         await ctx.reply(Locale.get("forcepetreply."+("result" if message else "reset"), member = member, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
 
     @slash_petpet.error
     async def slash_petpet_error(self, interaction: discord.Interaction, error):
-        if interaction.response.is_done():
-            await interaction.edit_original_response(content=f"Ran into an error: {error}") # TODO: locales
-        else:
-            await interaction.response.send_message(f"Ran into an error: {error}",ephemeral=True) # TODO: locales
+        if interaction.response.is_done(): await interaction.edit_original_response(content = Locale.get("overall.fail", error = error))
+        else: await interaction.response.send_message(Locale.get("overall.fail", error = error), ephemeral = True)
 
 async def setup(bot: MeowBot):
     cog = Pets(bot)

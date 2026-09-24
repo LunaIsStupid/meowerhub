@@ -7,6 +7,7 @@ import sys
 sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
+from utils.asserted import Assert
 
 class AFK(commands.Cog):
     MAX_MESSAGE_LENGTH = 200
@@ -53,6 +54,7 @@ class AFK(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def forceafk(self, ctx: commands.Context, member: discord.Member, *, message: str):
+        Assert.is_not_bot(member)
         message = await self.set_afk(ctx.guild.id, member.id, message)
         await ctx.reply(Locale.get("forceafk.result"+(".meow" if message.startswith("meow") else ""), member = member.mention, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
 
@@ -61,6 +63,7 @@ class AFK(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def resetafk(self, ctx: commands.Context, member: discord.Member):
+        Assert.is_not_bot(member)
         message = await self.reset_afk(ctx.guild.id, member.id)
         await ctx.reply(Locale.get("resetafk.result"+(".meow" if message.startswith("meow") else ""), member = member.mention), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
 

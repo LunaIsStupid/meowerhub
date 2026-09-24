@@ -11,7 +11,7 @@
     "error.message_not_resolved": "Couldn't resolve the message to process for this command.",
 
     "overall.fail": "There was an error executing this command: {error}",
-
+    
     "petpet.desc": "Pet people!",
     "petpet.user1": "Someone to pet!",
     "petpet.user2": "Someone to pet!",
