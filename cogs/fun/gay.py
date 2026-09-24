@@ -100,16 +100,12 @@ class HowGay(commands.Cog):
         if not isinstance(embed, discord.Embed): return await interaction.response.send_message(embed)
         return await interaction.response.send_message(embed=embed)
 
-    @prefix_howgay.error
-    async def howgay_error(self, ctx, error):
-        await ctx.reply(error)
-
     @slash_howgay.error
-    async def slash_howgay_error(self, interaction:discord.Interaction, error):
+    async def slash_howgay_error(self, interaction: discord.Interaction, error):
         if interaction.response.is_done():
-            await interaction.response.edit_message(content=error)
+            await interaction.edit_original_response(content=f"Ran into an error: {error}") # TODO: locales
         else:
-            await interaction.response.send_message(error)
+            await interaction.response.send_message(f"Ran into an error: {error}",ephemeral=True) # TODO: locales
 
 async def setup(bot: MeowBot):
     await bot.add_cog(HowGay(bot))

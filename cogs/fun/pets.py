@@ -176,19 +176,12 @@ class Pets(commands.Cog):
         message = await self.set_pet_reply(ctx.guild.id, member.id, message)
         await ctx.reply(Locale.get("forcepetreply."+("result" if message else "reset"), member = member, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
 
-
-    @forcepetreply.error
-    @setpetreply.error
-    @prefix_petpet.error
-    async def prefix_petpet_error(self, ctx, error):
-        await ctx.reply(error)
-
     @slash_petpet.error
     async def slash_petpet_error(self, interaction: discord.Interaction, error):
         if interaction.response.is_done():
-            await interaction.edit_original_response(content=f"Ran into an error: {error}")
+            await interaction.edit_original_response(content=f"Ran into an error: {error}") # TODO: locales
         else:
-            await interaction.response.send_message(f"Ran into an error: {error}",ephemeral=True)
+            await interaction.response.send_message(f"Ran into an error: {error}",ephemeral=True) # TODO: locales
 
 async def setup(bot: MeowBot):
     cog = Pets(bot)

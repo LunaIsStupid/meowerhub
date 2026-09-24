@@ -164,7 +164,7 @@ class Logging(commands.Cog):
         channel = await self.fetch_log_channel(guild, "mod_logs")
         if not channel: return # cant log anywhere
 
-        banner = None
+        moderator = None
         reason = None
         async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=1):
             if not entry.target or entry.target.id != user.id: continue  # missing audit log entry
@@ -172,8 +172,8 @@ class Logging(commands.Cog):
             time_difference = (datetime.datetime.now(datetime.timezone.utc) - entry.created_at)
 
             if time_difference.total_seconds() < 15:
-                banner = entry.user
-                reason = entry.reason or "No reason provided"
+                moderator = entry.user
+                reason = entry.reason
 
         embed = discord.Embed(
             title="Member Banned",
@@ -183,9 +183,9 @@ class Logging(commands.Cog):
         embed.set_thumbnail(url=user.display_avatar.url)
         embed.set_author(name=f"{user.name}", icon_url=user.display_avatar.url)
         embed.set_footer(text=f"{user.id}")
-        embed.add_field(name="Reason:", value=reason, inline=True)
+        embed.add_field(name="Reason:", value=reason or "No reason provided", inline=True)
 
-        if banner: embed.add_field(name="Punished By:", value=f"{banner.mention}", inline=True)
+        if moderator: embed.add_field(name="Punished By:", value=f"{moderator.mention}", inline=True)
 
         try: await channel.send(embed=embed)
         except discord.Forbidden: return  # cant send the message
@@ -215,7 +215,7 @@ class Logging(commands.Cog):
         channel = await self.fetch_log_channel(guild, "mod_logs")
         if not channel: return # cant log anywhere
 
-        unbanner = None
+        moderator = None
         reason = None
         async for entry in guild.audit_logs(action=discord.AuditLogAction.ban, limit=1):
             if not entry.target or entry.target.id != user.id: continue  # missing audit log entry
@@ -223,7 +223,7 @@ class Logging(commands.Cog):
             time_difference = (datetime.datetime.now(datetime.timezone.utc) - entry.created_at)
 
             if time_difference.total_seconds() < 15:
-                unbanner = entry.user
+                moderator = entry.user
                 reason = entry.reason or "No reason provided"
 
         embed = discord.Embed(
@@ -235,7 +235,7 @@ class Logging(commands.Cog):
         embed.set_author(name=f"{user.name}", icon_url=user.display_avatar.url)
         embed.set_footer(text=f"{user.id}")
         embed.add_field(name="Reason:", value=reason, inline=True)
-        if unbanner: embed.add_field(name="Pardoned By:", value=f"{unbanner.mention}", inline=True)
+        if moderator: embed.add_field(name="Pardoned By:", value=f"{moderator.mention}", inline=True)
 
         try: await channel.send(embed=embed)
         except discord.Forbidden: return  # cant send the message
@@ -284,28 +284,28 @@ class Logging(commands.Cog):
 
         if not mod_logs_channel: return
 
-        kicker = None
+        moderator = None
         reason = None
         async for entry in member.guild.audit_logs(action=discord.AuditLogAction.kick, limit=1):
             if entry.target and entry.target.id != member.id: continue  # missing audit log entry
-            kicker = entry.user
-            reason = entry.reason or "No reason provided"
-        if not kicker: return
+            moderator = entry.user
+            reason = entry.reason
 
         kick_embed: discord.Embed = discord.Embed(
             title="Member Kicked",
             timestamp=datetime.datetime.now(datetime.UTC),
             color=discord.Colour(0x555555),
         )
-        if kicker.display_avatar.url: kick_embed.set_thumbnail(url=kicker.display_avatar.url)
+
+        if moderator: kick_embed.set_thumbnail(url=moderator.display_avatar.url)
         if member.display_avatar.url:
             kick_embed.set_author(
                 name=f"{member.name}",
                 icon_url=member.display_avatar.url
             )
         kick_embed.set_footer(text=f"{member.id}")
-        kick_embed.add_field(name="Reason:", value=reason, inline=True)
-        if kicker: kick_embed.add_field(name="Punished By:", value=f"{kicker.mention}", inline=True)
+        kick_embed.add_field(name="Reason:", value=reason or "No reason provided", inline=True)
+        if moderator: kick_embed.add_field(name="Punished By:", value=f"{moderator.mention}", inline=True)
 
         try: await mod_logs_channel.send(embed=kick_embed)
         except discord.Forbidden: return  # cant send the message
@@ -320,11 +320,11 @@ class Logging(commands.Cog):
         channel = await self.fetch_log_channel(before.guild, "mod_logs")
         if not channel: return # cant log anywhere
 
-        timer = None
+        moderator = None
         reason: str = "No reason provided"
         async for entry in before.guild.audit_logs(action=discord.AuditLogAction.member_update, limit=1):
             if entry.target and entry.target.id != before.id: continue  # missing audit log entry
-            timer: discord.User | discord.Member | None = entry.user
+            moderator: discord.User | discord.Member | None = entry.user
             reason = entry.reason or "No reason provided"
 
         embed: discord.Embed
@@ -339,7 +339,7 @@ class Logging(commands.Cog):
             if not after.timed_out_until: embed.add_field(name="Reason:", value=reason + "\n**Until**: Unknown", inline=True)
             else: embed.add_field(name="Reason:", value=reason + f"\n**Until**: <t:{int(after.timed_out_until.timestamp())}:t>", inline=True)
             embed.set_thumbnail(url=before.display_avatar.url)
-            if timer: embed.add_field(name="Punished By:", value=timer.mention)
+            if moderator: embed.add_field(name="Punished By:", value=moderator.mention)
         elif not after.is_timed_out() and before.is_timed_out():
             embed = discord.Embed(
                 title="Member Unmuted",
@@ -350,7 +350,7 @@ class Logging(commands.Cog):
             embed.add_field(name="Reason:", value=reason, inline=True)
             embed.set_author(name=f"{before.name}", icon_url=before.display_avatar.url)
             embed.set_thumbnail(url=before.display_avatar.url)
-            if timer: embed.add_field(name="Pardoned By:", value=timer.mention)
+            if moderator: embed.add_field(name="Pardoned By:", value=moderator.mention)
         else: return  # timeout state didnt change, nothing to log
 
         try: await channel.send(embed=embed)

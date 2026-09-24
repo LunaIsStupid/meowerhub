@@ -86,13 +86,6 @@ class AFK(commands.Cog):
                 # to prevent spam exit here
 
 
-    @afk.error
-    @resetafk.error
-    @forceafk.error
-    async def error(self, ctx, error):
-        await ctx.reply(Locale.get("overall.fail", error = error))
-
-
 async def setup(bot: MeowBot):
     cog = AFK(bot)
     await cog.update_caches()

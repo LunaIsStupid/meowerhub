@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 from utils.help import MeowHelp
 from utils.locales import Locale
 from utils.db import DB
+from utils.asserted import AssertExc
+from utils import reuse
 
 load_dotenv()
 
@@ -83,8 +85,15 @@ class MeowBot(commands.Bot):
 
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, commands.CommandNotFound): return
-        await super().on_command_error(ctx, error)
-
+        error = getattr(error, "original", error)
+        if isinstance(error, AssertExc):
+            await ctx.reply(Locale.get(error.key, **error.kwargs), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
+            return
+        if ctx.command and ctx.command.has_error_handler():
+            await super().on_command_error(ctx, error)
+            return
+        await ctx.reply(Locale.get("overall.fail", error = error), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
+        
 
 def main():
     parser = argparse.ArgumentParser(

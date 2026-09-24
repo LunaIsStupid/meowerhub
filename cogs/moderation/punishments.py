@@ -13,11 +13,12 @@ sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
 from utils import timed
-
+from utils.asserted import *
 
 # TODO: think about setting up locales
 class ModCommands(commands.Cog):
     UNIT_CONVERTERS = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
+    MAX_MUTE_SECONDS = 2419200
 
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
@@ -35,27 +36,22 @@ class ModCommands(commands.Cog):
         `!mute <user> <duration> <reason>`
         """
 
-        if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
-
-        # TODO: CHECK IF USER IS ALREADY MUTED
+        Assert.is_not_author(ctx, member)
+        Assert.has_permissions(ctx, moderate_members = True)
+        Assert.has_permissions(ctx, ctx.author, moderate_members = True)
+        Assert.can_moderate(ctx.author, member)
 
         seconds, duration, reason = timed.extract(duration + " " + reason)
-        reason = reason or "No reason provided."
+        reason = reason or "No reason provided." # TODO: locales
 
         if not seconds:
-            seconds = 2419200
+            seconds = self.MAX_MUTE_SECONDS
             duration = "28 days"
 
-        if seconds > 2419200:
-            await ctx.send("Duration capped at 28 days.")
+        if seconds > self.MAX_MUTE_SECONDS:
+            await ctx.send("Duration capped at 28 days.") # TODO: locales
             duration = "28 days"
-            seconds = 2419200
+            seconds = self.MAX_MUTE_SECONDS
 
         try:
             await member.timeout(timedelta(seconds = seconds), reason = reason)
@@ -68,18 +64,15 @@ class ModCommands(commands.Cog):
     @reuse.cmd_describe("unmute", ["member"])
     @reuse.guild_only
     @reuse.check_permissions(moderate_members = True)
-    async def unmute(self, ctx, member: discord.Member):
+    async def unmute(self, ctx: commands.Context, member: discord.Member):
         """Unmutes a member.
         Usage:
         `!unmute <member>`"""
 
-        if not ctx.guild.me.guild_permissions.moderate_members: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "moderate members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
+        Assert.is_not_author(ctx, member)
+        Assert.has_permissions(ctx, moderate_members = True)
+        Assert.has_permissions(ctx, ctx.author, moderate_members = True)
+        Assert.can_moderate(ctx.author, member)
 
         try:
             await member.timeout(None)
@@ -101,13 +94,10 @@ class ModCommands(commands.Cog):
         `!kick <user> <reason>`
         """
 
-        if not ctx.guild.me.guild_permissions.kick_members: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "kick members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
+        Assert.is_not_author(ctx, member)
+        Assert.has_permissions(ctx, kick_members = True)
+        Assert.has_permissions(ctx, ctx.author, kick_members = True)
+        Assert.can_moderate(ctx.author, member)
 
         try:
             await member.kick(reason = reason)
@@ -128,27 +118,16 @@ class ModCommands(commands.Cog):
         Usage:
         `!ban <user> <days to purge> <reason>`
         """
-        if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
+
+        Assert.is_not_author(ctx, member)
+        Assert.has_permissions(ctx, ban_members = True)
+        Assert.has_permissions(ctx, ctx.author, ban_members = True)
+        Assert.can_moderate(ctx.author, member)
 
         delete_message_days: int = 0
         try: delete_message_days = min(7, max(0, int(days_str)))
         except ValueError: reason = days_str + " " + reason
 
-        # guild_member: discord.Member | None = None
-        # try: guild_member = await ctx.guild.fetch_member(member.id)
-        # except discord.NotFound: return await ctx.send("Couldn't find the user")
-        # except discord.HTTPException as e: return await ctx.send(f"Failed to fetch member for banning: \n-# {e}")
-        #
-        #
-        # if guild_member and ctx.author.top_role.position <= member.top_role.position:
-        #     return await ctx.send("You cannot ban a member with a higher role than you.")
-        #   for now let it be commented, in case we really need it, but if its confirmed it works perfectly in any case, then drop that
         try:
             await ctx.guild.ban(member, delete_message_days = delete_message_days, reason = reason)
             await ctx.send(Locale.get("ban.result", member = member.mention, duration = f"{delete_message_days} days" if delete_message_days else "eternity", reason = reason))
@@ -165,9 +144,9 @@ class ModCommands(commands.Cog):
         Usage:
         `!unban <member>`"""
 
-        if not ctx.guild.me.guild_permissions.ban_members: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "ban members"), ephemeral = True)
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
+        Assert.is_not_author(ctx, member)
+        Assert.has_permissions(ctx, ban_members = True)
+        Assert.has_permissions(ctx, ctx.author, ban_members = True)
 
         try:
             await ctx.guild.unban(member)
@@ -187,12 +166,10 @@ class ModCommands(commands.Cog):
         Usage:
         `!warn <member> [reason]`"""
         # Passthrough method so it gets grouped with the moderation commands, but logs the warn.
-        if member.bot: return await ctx.send(Locale.get("error.bot_user"), ephemeral = True) # TODO: make custom inline assertion
-        if member == ctx.author: return await ctx.send(Locale.get("error.author_user"), ephemeral = True) # TODO: make custom inline assertion
-        if member.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.user_role_lower"), ephemeral = True)
-        if member.top_role >= ctx.guild.me.top_role: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.bot_role_lower"), ephemeral = True)
+
+        Assert.is_not_bot(member)
+        Assert.is_not_author(ctx, member)
+        Assert.can_moderate(ctx.author, member)
 
         warning_id = await self.bot.db.warnings.add(ctx.guild.id, member.id, ctx.author.id, reason)
         logger: commands.Cog | Logging | None = self.bot.get_cog("Logging")
@@ -211,8 +188,8 @@ class ModCommands(commands.Cog):
         # TODO: reuse.GUILD_TEXT_CHANNEL
         # TODO: locales
 
-        if not ctx.guild.me.guild_permissions.manage_messages: # TODO: make custom inline assertion
-            return await ctx.send(Locale.get("error.no_bot_perms", perm = "manage messages"), ephemeral = True)
+        Assert.has_permissions(ctx, manage_messages = True)
+        Assert.has_permissions(ctx, ctx.author, manage_messages = True)
 
         try:
             messages = await ctx.channel.purge(limit=count)
@@ -224,17 +201,6 @@ class ModCommands(commands.Cog):
             await ctx.send(Locale.get("purge.result", count = count))
         except discord.HTTPException as e:
             await ctx.send(Locale.get("purge.fail", error = f"\n-#{e}"), ephemeral = True)
-
-    @mute.error
-    @unmute.error
-    @kick.error
-    @ban.error
-    @unban.error
-    @warn.error
-    @purge.error
-    async def error(self, ctx, error):
-        await ctx.reply(Locale.get("overall.fail", error = error))
-        # if you need custom behavior, then add new error function, no need to make separate functions for each command
 
 
 async def setup(bot: MeowBot):

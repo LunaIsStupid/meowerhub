@@ -1,10 +1,12 @@
 {
     "error.no_members_arg": "Please mention at least one member.",
-    "error.no_bot_perms": "I do not have the `{perm}` permission required for this.",
-    "error.user_role_lower": "You cannot do moderation actions to members with higher (or equal) role than yours.",
-    "error.bot_role_lower": "I cannot do moderation actions to members with higher (or equal) role than me.",
-    "error.author_user": "You cannot do moderation actions to yourself.",
-    "error.bot_user": "You cannot do this moderation action to a bot.",
+    "error.no_user_perms": "You do not have the {perm} permission(s) required for this action.",
+    "error.no_bot_perms": "I do not have the {perm} permission(s) required for this action.",
+    "error.user_role_lower": "You cannot do this action to members with higher (or equal) role than yours.",
+    "error.bot_role_lower": "I cannot do this action to members with higher (or equal) role than me.",
+    "error.author_user": "You cannot do this action to yourself.",
+    "error.owner_user": "You cannot do this action to server owner.",
+    "error.bot_user": "You cannot do this action to a bot.",
     "error.missing_reply": "You must reply to a message to use this command.",
     "error.message_not_resolved": "Couldn't resolve the message to process for this command.",
 
