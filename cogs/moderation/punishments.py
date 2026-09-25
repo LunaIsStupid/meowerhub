@@ -15,7 +15,8 @@ from utils.locales import Locale
 from utils import timed
 from utils.asserted import *
 
-# TODO: think about setting up locales
+# TODO: rename filename and class name to moderation or smth
+
 class ModCommands(commands.Cog):
     UNIT_CONVERTERS = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
     MAX_MUTE_SECONDS = 2419200
@@ -29,7 +30,7 @@ class ModCommands(commands.Cog):
     @reuse.check_permissions(moderate_members = True)
     async def mute(
         self, ctx: commands.Context, member: discord.Member,
-        duration: str = "28d", *, reason: str = "No reason provided.",
+        duration: str = "28d", *, reason: str | None = None
     ):
         """Kicks a member.
         Usage:
@@ -41,8 +42,8 @@ class ModCommands(commands.Cog):
         Assert.has_permissions(ctx, ctx.author, moderate_members = True)
         Assert.can_moderate(ctx.author, member)
 
-        seconds, duration, reason = timed.extract(duration + " " + reason)
-        reason = reason or "No reason provided." # TODO: locales
+        seconds, duration, reason = timed.extract(duration + " " + reason if reason else "")
+        reason = reason or Locale.get("string.not_reason_provided")
 
         if not seconds:
             seconds = self.MAX_MUTE_SECONDS
@@ -87,7 +88,7 @@ class ModCommands(commands.Cog):
     @reuse.check_permissions(moderate_members = True)
     async def kick(
         self, ctx, member: discord.Member,
-        *, reason: str = "No reason provided."
+        *, reason: str | None = None
     ):
         """Kicks a member.
         Usage:
@@ -98,6 +99,8 @@ class ModCommands(commands.Cog):
         Assert.has_permissions(ctx, kick_members = True)
         Assert.has_permissions(ctx, ctx.author, kick_members = True)
         Assert.can_moderate(ctx.author, member)
+
+        reason = reason or Locale.get("string.not_reason_provided")
 
         try:
             await member.kick(reason = reason)
@@ -112,7 +115,7 @@ class ModCommands(commands.Cog):
     @reuse.check_permissions(moderate_members = True)
     async def ban(
         self, ctx, member: discord.Member, days_str: str = "0",
-        *, reason: str = "No reason provided."
+        *, reason: str | None = None
     ):
         """Bans a member.
         Usage:
@@ -123,6 +126,8 @@ class ModCommands(commands.Cog):
         Assert.has_permissions(ctx, ban_members = True)
         Assert.has_permissions(ctx, ctx.author, ban_members = True)
         Assert.can_moderate(ctx.author, member)
+
+        reason = reason or Locale.get("string.not_reason_provided")
 
         delete_message_days: int = 0
         try: delete_message_days = min(7, max(0, int(days_str)))
@@ -160,32 +165,34 @@ class ModCommands(commands.Cog):
     @reuse.check_permissions(moderate_members = True)
     async def warn(
         self, ctx: commands.Context, member: discord.Member,
-        *, reason: str = "No reason provided."
+        *, reason: str | None = None
     ):
         """Warns a member.
         Usage:
         `!warn <member> [reason]`"""
         # Passthrough method so it gets grouped with the moderation commands, but logs the warn.
+        # TODO: make easier way to get the logger cog
 
         Assert.is_not_bot(member)
         Assert.is_not_author(ctx, member)
         Assert.can_moderate(ctx.author, member)
 
-        warning_id = await self.bot.db.warnings.add(ctx.guild.id, member.id, ctx.author.id, reason)
-        logger: commands.Cog | Logging | None = self.bot.get_cog("Logging")
-        if not logger: return await ctx.send("Couldn't find logging command, warn failed.") # idk maybe move in locales
-        if not hasattr(logger, "log_warn"): return await ctx.send("Expected the logging cog, got something else instead.")
-        logger = cast(Logging, logger)
-        await logger.log_warn(ctx, member, reason, warning_id)
-        await ctx.send(Locale.get("warn.result", member = member.mention, reason = reason, id = warning_id))
+        reason = reason or Locale.get("string.not_reason_provided")
 
+        try:
+            warning_id = await self.bot.db.warnings.add(ctx.guild.id, member.id, ctx.author.id, reason)
+            logger = self.bot.get_cog_by_class(Logging)
+            if not logger: return await ctx.send("Couldn't find logging cog, warn failed.", ephemeral=True) # TODO: locales
+            await logger.log_warn(ctx, member, reason, warning_id)
+            await ctx.send(Locale.get("warn.result", member = member.mention, reason = reason, id = warning_id))
+        except discord.HTTPException as e:
+            await ctx.send(Locale.get("warn.fail", error = f"\n-#{e}"), ephemeral = True)
     @reuse.hybrid_cmd("purge")
     @reuse.cmd_describe("purge", ["count"])
     @reuse.guild_only
     @reuse.check_permissions(manage_messages = True)
     async def purge(self, ctx: commands.Context, count: int):
-        if not isinstance(ctx.channel, discord.Thread | discord.ForumChannel | discord.TextChannel): return await ctx.reply("cant do it here", ephemeral = True)
-        # TODO: reuse.GUILD_TEXT_CHANNEL
+        if not isinstance(ctx.channel, reuse.TEXT_CHANNEL): return await ctx.reply("cant do it here", ephemeral = True)
         # TODO: locales
 
         Assert.has_permissions(ctx, manage_messages = True)
@@ -193,11 +200,9 @@ class ModCommands(commands.Cog):
 
         try:
             messages = await ctx.channel.purge(limit=count)
-            logger: commands.Cog | Logging | None = self.bot.get_cog("Logging")
-            if not logger: return await ctx.send("Couldn't find logging command, warn failed.") # idk maybe move in locales
-            if not hasattr(logger, "log_warn"): return await ctx.send("Expected the logging cog, got something else instead.")
-            logger = cast(Logging, logger)
-            await logger.log_purge(ctx, ctx.author, messages)
+            logger = self.bot.get_cog_by_class(Logging)
+            if logger: await logger.log_purge(ctx, ctx.author, messages)
+            else: await ctx.send("Couldn't find logging cog.", ephemeral=True) # TODO: locales
             await ctx.send(Locale.get("purge.result", count = count))
         except discord.HTTPException as e:
             await ctx.send(Locale.get("purge.fail", error = f"\n-#{e}"), ephemeral = True)

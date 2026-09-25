@@ -19,6 +19,8 @@ from utils.db import DB
 from utils.asserted import AssertExc
 from utils import reuse
 
+from cogs.manager import CogManager
+
 load_dotenv()
 
 
@@ -31,12 +33,16 @@ class MeowBot(commands.Bot):
         self.ext_dir = pathlib.Path(ext_dir)
 
     async def _load_extensions(self):
-        print("[meowerhub] Loading extensions...")
+        print("[meowerhub] Loading extensions...") # TODO: proper console logging
         try:
             await self.load_extension("cogs.manager")
             print("[meowerhub] Loaded manager cog")
         except commands.ExtensionError as e:
             print(f"[meowerhub] Failed to load manager: {e}")
+
+    def get_cog_by_class[T: commands.Cog](self, cls: type[T]) -> T | None:
+        cog = self.cogs.get(cls.__name__)
+        return cog if isinstance(cog, cls) else None
 
     async def setup_hook(self):
         Locale.loadLocales()
