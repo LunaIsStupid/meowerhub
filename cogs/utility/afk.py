@@ -46,6 +46,9 @@ class AFK(commands.Cog):
     @reuse.cmd_describe("afk", ["message"])
     @reuse.guild_only
     async def afk(self, ctx: commands.Context, *, message: str = ""):
+        """Go AFK
+        Usage:
+        `!afk <message>`"""
         message = await self.set_afk(ctx.guild.id, ctx.author.id, message)
         await ctx.reply(Locale.get("afk.result"+(".meow" if message.startswith("meow") else ""), message = message), ephemeral=True)
 
@@ -54,6 +57,9 @@ class AFK(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def forceafk(self, ctx: commands.Context, member: discord.Member, *, message: str):
+        """Force an AFK message
+        Usage:
+        `!afk <user> <message>`"""
         Assert.is_not_bot(member)
         message = await self.set_afk(ctx.guild.id, member.id, message)
         await ctx.reply(Locale.get("forceafk.result"+(".meow" if message.startswith("meow") else ""), member = member.mention, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
@@ -63,6 +69,9 @@ class AFK(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def resetafk(self, ctx: commands.Context, member: discord.Member):
+        """Reset an AFK message
+        Usage:
+        `!resetafk <user>`"""
         Assert.is_not_bot(member)
         message = await self.reset_afk(ctx.guild.id, member.id)
         await ctx.reply(Locale.get("resetafk.result"+(".meow" if message.startswith("meow") else ""), member = member.mention), allowed_mentions=reuse.NO_MENTION, ephemeral=True)

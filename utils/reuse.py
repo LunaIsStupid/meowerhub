@@ -25,14 +25,14 @@ def check_permissions(**kwargs):
         discord.app_commands.checks.has_permissions(**kwargs)
     )
 
-def hybrid_cmd(key: str):
-    return commands.hybrid_command(name = key, description = Locale.getFormatted(f"{key}.desc"))
+def hybrid_cmd(key: str, hidden: bool = False):
+    return commands.hybrid_command(name = key, description = Locale.getFormatted(f"{key}.desc"), hidden=hidden)
 
 def app_cmd(key: str):
     return discord.app_commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"))
 
-def cmd(key: str):
-    return commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"))
+def cmd(key: str, hidden: bool = False):
+    return commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"), hidden=hidden)
 
 def cmd_describe(key: str, args: list[str]):
     kwargs = {}

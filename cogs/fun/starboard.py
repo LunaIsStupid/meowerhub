@@ -189,6 +189,10 @@ class Starboard(commands.Cog):
     @reuse.cmd("starthis")
     @commands.has_permissions(administrator=True)
     async def starthis_cmd(self, ctx: commands.Context, message_id: str | None = None):
+        """Star a message
+        Usage:
+        `!starthis [<message_id>]`
+        OR reply to the message and use `!starthis`"""
         if not ctx.message.reference and not message_id: return await ctx.reply(Locale.get("error.missing_reply"))
         message: discord.Message | None = None
         if message_id and ctx.guild:

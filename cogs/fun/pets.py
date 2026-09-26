@@ -102,6 +102,10 @@ class Pets(commands.Cog):
 
     @commands.command()
     async def pet(self, ctx):
+        """Pets the bot
+        Usage:
+        `!pet`
+        """
         await ctx.reply(random.choice(self.PET_REPLIES))
 
     async def petpet_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]: # wrapper, cant directly call self.bot.user_autocomplete
@@ -136,6 +140,10 @@ class Pets(commands.Cog):
         user3: str | None = None,
         user4: str | None = None,
     ):
+        """Pet someone else :3
+        Usage:
+        `!petpet <user> <user> <user> <user>`
+        """
         targets: list[reuse.USER | str] = [u for u in (user1, user2, user3, user4) if u is not None]
         if not targets: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
         await ctx.defer()
@@ -164,6 +172,10 @@ class Pets(commands.Cog):
     @reuse.cmd_describe("setpetreply", ["message"])
     @reuse.guild_only
     async def setpetreply(self, ctx: commands.Context, *, message: str = ""):
+        """Set your reply message
+        Usage:
+        `!setpetreply <message>`
+        """
         message = await self.set_pet_reply(ctx.guild.id, ctx.author.id, message)
         await ctx.reply(Locale.get("setpetreply."+("result" if message else "reset"), message = message), ephemeral=True)
 
@@ -173,6 +185,10 @@ class Pets(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def forcepetreply(self, ctx: commands.Context, member: discord.Member, *, message: str = ""):
+        """Force someone elses pet reply.
+        Usage:
+        `!forcepetreply <member> [<message>]`
+        """
         Assert.is_not_bot(member)
         message = await self.set_pet_reply(ctx.guild.id, member.id, message)
         await ctx.reply(Locale.get("forcepetreply."+("result" if message else "reset"), member = member, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)

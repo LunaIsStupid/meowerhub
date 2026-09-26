@@ -109,7 +109,7 @@ class Events(commands.Cog):
                 embed.set_thumbnail(url=new_host.display_avatar.url)
                 await channel.send(embed=embed)
 
-    @reuse.cmd("event_button")
+    @reuse.cmd("event_button", hidden=True)
     @commands.has_permissions(administrator=True)
     async def event_button(self, ctx: commands.Context):
         embed: discord.Embed = discord.Embed(
@@ -122,6 +122,10 @@ class Events(commands.Cog):
     @reuse.hybrid_cmd("eventping")
     @reuse.guild_only
     async def eventping(self, ctx: commands.Context):
+        """Pings the role for notifying events
+        Usage:
+        `!eventping`
+        """
         if not ctx.guild: return await ctx.reply("Can't find guild!", ephemeral=True)
         if not self.ping_ids[str(ctx.guild.id)]: return
         try:

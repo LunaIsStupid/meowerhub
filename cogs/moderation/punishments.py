@@ -187,11 +187,16 @@ class ModCommands(commands.Cog):
             await ctx.send(Locale.get("warn.result", member = member.mention, reason = reason, id = warning_id))
         except discord.HTTPException as e:
             await ctx.send(Locale.get("warn.fail", error = f"\n-#{e}"), ephemeral = True)
+
     @reuse.hybrid_cmd("purge")
     @reuse.cmd_describe("purge", ["count"])
     @reuse.guild_only
     @reuse.check_permissions(manage_messages = True)
     async def purge(self, ctx: commands.Context, count: int):
+        """Purge some messages
+        Usage:
+        `!purge <number>`
+        """
         if not isinstance(ctx.channel, reuse.TEXT_CHANNEL): return await ctx.reply("cant do it here", ephemeral = True)
         # TODO: locales
 

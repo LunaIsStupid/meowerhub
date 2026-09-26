@@ -87,6 +87,10 @@ class HowGay(commands.Cog):
 
     @reuse.cmd("howgay")
     async def prefix_howgay(self, ctx: commands.Context, someone: str):
+        """Check how gay someone is :3
+        Usage:
+        `!howgay <user>`
+        """
         user = await self.bot.extract_user(ctx, someone)
         embed = await self.howgay(ctx, user)
         if not isinstance(embed, discord.Embed): return await ctx.reply(embed) # embed replied
