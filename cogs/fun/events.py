@@ -3,6 +3,7 @@ from multiprocessing import Event
 from textwrap import dedent
 from typing import TypedDict
 
+from aiosqlite import Row
 import discord
 from discord.colour import Color
 from discord.ext import commands, tasks
@@ -14,8 +15,8 @@ from . import _settings as settings
 
 
 class EventRegisterView(discord.ui.View):
-    def __init__(self, bot: MeowBot, timeout: float = 60.0) -> None:
-        super().__init__(timeout=timeout)
+    def __init__(self, bot: MeowBot) -> None:
+        super().__init__(timeout=None)
         self.bot = bot
 
     @discord.ui.button(
@@ -70,44 +71,47 @@ class Events(commands.Cog):
     @tasks.loop(time=MIDNIGHT_UTC)
     async def get_new_host(self, manual: bool = False):
         now = datetime.datetime.now(datetime.timezone.utc)
-        if now.weekday() == 6 or manual:
-            for guild_settings in await self.bot.db.guilds.get_many():
-                guild_id = guild_settings["guild_id"]
-                event_host_id = guild_settings["event_host_id"]
-                if not guild_id or not event_host_id: continue
-                try: guild: discord.Guild = await self.bot.fetch_guild(int(guild_id))
-                except: continue
-                try: event_host_role: discord.Role = await guild.fetch_role(int(event_host_id))
-                except: continue
-                for member in event_host_role.members: await member.remove_roles(event_host_role)
-                new_host_row = await self.bot.db.events.get(guild_id)
-                if not new_host_row: continue
-                try: new_host = await guild.fetch_member(new_host_row["user_id"])
-                except: continue
-                await new_host.add_roles(event_host_role)
-                await new_host.send(
-                    content=dedent(f"""
-                    You are the new host for this week in {guild.name}!
-                    You have been given the proper roles, use !eventping to ping people when needed!
-                    -# Abuse of the commands given to you will result in severe punishment
-                    """).strip()
-                )
-                await self.bot.db.events.reset(guild_id)
-                channel_id = guild_settings["event_announcements"]
-                if not channel_id: continue
-                try: channel = await guild.fetch_channel(int(channel_id))
-                except: continue
-                if not isinstance(channel, reuse.TEXT_CHANNEL): continue
-                color = new_host.color
-                embed: discord.Embed = discord.Embed(
-                    title="New event host!",
-                    description=f"{new_host.mention}, is this weeks event host!",
-                    color=color
-                    if color and color != discord.Colour(0)
-                    else settings.DEFAULT_COLOR,
-                )
-                embed.set_thumbnail(url=new_host.display_avatar.url)
-                await channel.send(embed=embed)
+        if manual or now.weekday() == 6:
+            guild_settings_list = await self.bot.db.guilds.get_many()
+            for settings_data in guild_settings_list:
+                try: await self._process_guild_host_update(settings_data)
+                except Exception as e: print(e)
+
+    async def _process_guild_host_update(self, guild_settings: Row):
+        guild_id = guild_settings["guild_id"]
+        role_id = guild_settings["event_host_id"]
+        if not guild_id or not role_id: return
+        guild = self.bot.get_guild(int(guild_id)) or await self.bot.fetch_guild(int(guild_id))
+        if not guild: return
+        event_host_role = guild.get_role(int(role_id))
+        if not event_host_role: return
+        new_host_row = await self.bot.db.events.get(guild_id)
+        if not new_host_row: return
+        user_id = new_host_row["user_id"]
+        new_host = guild.get_member(user_id) or await guild.fetch_member(user_id)
+        if not new_host: return
+        for member in event_host_role.members: await member.remove_roles(event_host_role)
+        await new_host.add_roles(event_host_role)
+        dm_content = dedent(f"""
+            You are the new host for this week in {guild.name}!
+            You have been given the proper roles, use !eventping to ping people when needed!
+            -# Abuse of the commands given to you will result in severe punishment
+        """).strip()
+        try: await new_host.send(content=dm_content)
+        except discord.HTTPException: pass
+        await self.bot.db.events.reset(guild_id)
+        channel_id = guild_settings["event_announcements"]
+        if not channel_id: return
+        channel = guild.get_channel(int(channel_id))
+        if not isinstance(channel, discord.TextChannel): return
+        color = new_host.color if new_host.color.value != 0 else settings.DEFAULT_COLOR
+        embed = discord.Embed(
+            title="New event host!",
+            description=f"{new_host.mention} is this week's event host!",
+            color=color
+        )
+        embed.set_thumbnail(url=new_host.display_avatar.url)
+        await channel.send(embed=embed)
 
     @reuse.cmd("event_button", hidden=True)
     @commands.has_permissions(administrator=True)
@@ -118,6 +122,12 @@ class Events(commands.Cog):
             color=settings.DEFAULT_COLOR,
         )
         await ctx.send(embed=embed, view=EventRegisterView(self.bot))
+
+    @reuse.cmd("force_select", hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def force_select(self, ctx: commands.Context):
+        await self.get_new_host(True)
+        return await ctx.reply("Ran!")
 
     @reuse.hybrid_cmd("eventping")
     @reuse.guild_only
@@ -139,6 +149,7 @@ class Events(commands.Cog):
 
     @event_button.error
     @eventping.error
+    @force_select.error
     async def error(self, ctx, error):
         return await ctx.reply(error)
 
