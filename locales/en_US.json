@@ -27,6 +27,14 @@
     "petpet.custom.self": "you silly",
     "petpet.result": "{petter} has pet {petted}",
 
+    "setup.msg_logs": "Message Logs",
+    "setup.member_logs": "Member Logs",
+    "setup.mod_logs": "Mod Logs",
+    "setup.sb_channel": "Starboard Channel",
+    "setup.event_ping_id": "Event Ping Role",
+    "setup.event_host_id": "Event Host Role",
+    "setup.event_announcements": "Event Annoucements",
+
     "howgay.desc": "Check how gay someone is!",
     "howgay.user": "Who to check gayness levels..",
     "howgay.result": "🏳️‍🌈 {name} {to_be} {gay}% gay!",
@@ -102,8 +110,6 @@
     "forcepetreply.message": "Pet message",
     "forcepetreply.result": "Forced pet message for {member} as {message}",
     "forcepetreply.reset": "Reset pet message for {member}",
-
-
 
     "starthis.success": "Successfully starred {author_ping}'s message!"
 }

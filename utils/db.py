@@ -47,6 +47,12 @@ class Guilds:
             sb_channel INTEGER
         )
         """)
+        try: await self.db.execute("ALTER TABLE guilds ADD COLUMN event_ping_id INTEGER")
+        except: pass
+        try: await self.db.execute("ALTER TABLE guilds ADD COLUMN event_host_id INTEGER")
+        except: pass
+        try: await self.db.execute("ALTER TABLE guilds ADD COLUMN event_announcements INTEGER")
+        except: pass
         await self.db.commit()
         print("Guilds...")
         return self
@@ -64,12 +70,14 @@ class Guilds:
             self, guild_id: int,
             msg_logs: int | None = None, member_logs: int | None = None,
             mod_logs: int | None = None, sb_channel: int | None = None,
+            event_ping_id: int | None = None, event_host_id: int | None = None,
+            event_announcements: int | None = None,
             autocommit: bool = True
         ):
         await self.db.execute("""
-            INSERT OR IGNORE INTO guilds (guild_id, msg_logs, member_logs, mod_logs, sb_channel)
-            VALUES (?, ?, ?, ?, ?)
-            """, (guild_id, msg_logs, member_logs, mod_logs, sb_channel)
+            INSERT OR IGNORE INTO guilds (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements)
         )
         if autocommit: await self.db.commit()
 
@@ -77,6 +85,8 @@ class Guilds:
             self, guild_id: int,
             msg_logs: int | None = None, member_logs: int | None = None,
             mod_logs: int | None = None, sb_channel: int | None = None,
+            event_ping_id: int | None = None, event_host_id: int | None = None,
+            event_announcements: int | None = None,
             autocommit: bool = True
         ):
         await self.db.execute("""
@@ -84,9 +94,12 @@ class Guilds:
                 msg_logs = COALESCE(?, msg_logs),
                 member_logs = COALESCE(?, member_logs),
                 mod_logs = COALESCE(?, mod_logs),
-                sb_channel = COALESCE(?, sb_channel)
+                sb_channel = COALESCE(?, sb_channel),
+                event_ping_id = COALESCE(?, event_ping_id),
+                event_host_id = COALESCE(?, event_host_id),
+                event_announcements = COALESCE(?, event_announcements)
             WHERE guild_id = ?
-            """, (msg_logs, member_logs, mod_logs, sb_channel, guild_id)
+            """, (msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements, guild_id)
         )
         if autocommit: await self.db.commit()
 
@@ -256,7 +269,7 @@ class Pet:
         )
         """)
         await self.db.commit()
-        print("Afk...")
+        print("Pet...")
         return self
 
     async def get(self, guild_id: int, user_id: int):
@@ -282,6 +295,48 @@ class Pet:
         await self.db.execute("DELETE FROM pet WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
         if autocommit: await self.db.commit()
 
+class Events:
+    def __init__(self, db: aiosqlite.Connection) -> None:
+        self.db = db
+
+    async def setup(self):
+        await self.db.execute("""
+        CREATE TABLE IF NOT EXISTS events(
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+
+            CONSTRAINT fk_event_guild FOREIGN KEY (guild_id) REFERENCES guilds(guild_id) ON DELETE CASCADE,
+            CONSTRAINT fk_pet_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+
+            PRIMARY KEY (guild_id, user_id)
+        )
+        """)
+        await self.db.commit()
+        print("Events...")
+        return self
+
+    async def get(self, guild_id: int, user_id: int | None = None):
+        if not user_id:
+            async with self.db.execute("SELECT user_id FROM events WHERE guild_id = ? ORDER BY RANDOM() LIMIT 1", (guild_id,)) as cursor:
+                return await cursor.fetchone()
+        async with self.db.execute("SELECT * FROM events WHERE guild_id = ? AND user_id = ?", (guild_id, user_id)) as cursor:
+            return await cursor.fetchone()
+
+    async def upsert(self, guild_id: int, user_id: int, autocommit: bool = True):
+        await self.db.execute("""
+            INSERT OR IGNORE INTO events (guild_id, user_id) VALUES (?, ?)
+            """, (guild_id, user_id)
+        )
+        if autocommit: await self.db.commit()
+
+    async def rem(self, guild_id: int, user_id: int, autocommit: bool = True):
+        await self.db.execute("DELETE FROM events WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
+        if autocommit: await self.db.commit()
+
+    async def reset(self, guild_id: int, autocommit: bool = True):
+        await self.db.execute("DELETE FROM events WHERE guild_id = ?", (guild_id,))
+        if autocommit: await self.db.commit()
+
 
 class DB:
     db: aiosqlite.Connection
@@ -291,6 +346,7 @@ class DB:
     starboard: Starboard
     afk: Afk
     pet: Pet
+    events: Events
 
     async def setup(self, path = "database.db"):
         print("Setting up database...")
@@ -305,6 +361,7 @@ class DB:
         self.starboard = await Starboard(self.db).setup()
         self.afk = await Afk(self.db).setup()
         self.pet = await Pet(self.db).setup()
+        self.events = await Events(self.db).setup()
         print("Database ready!")
 
         return self

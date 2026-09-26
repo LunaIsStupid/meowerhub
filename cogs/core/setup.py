@@ -4,7 +4,9 @@ import aiosqlite
 import discord
 from discord.ext import commands
 
+from cogs.fun.events import Events
 from main import MeowBot
+from utils.locales import Locale
 
 from ..moderation.logging import Logging
 
@@ -28,15 +30,17 @@ async def embed_helper(
     items = dict(zip(row.keys(), row))
     items.pop("guild_id", None)
     for setting, value in items.items():
-        setting_pretty = setting.replace("_", " ").title()
-        if setting_pretty.startswith("Sb"):
-            setting_pretty = "Starboard Channel"
+        setting_pretty = Locale.get(f"setup.{setting}")
         if value:
             try:
                 channel = await ctx.guild.fetch_channel(value)
                 channel_pretty = channel.mention
             except discord.NotFound:
-                channel_pretty = f"Missing Channel \n-# `{value}`"
+                try:
+                    role = await ctx.guild.fetch_role(value)
+                    channel_pretty = role.mention
+                except discord.NotFound:
+                    channel_pretty = f"Missing Channel \n-# `{value}`"
             except discord.Forbidden:
                 channel_pretty = f"Inaccessible channel \n-# `{value}`"
             except ValueError:
@@ -73,20 +77,21 @@ class ChannelModal(discord.ui.Modal, title="Set Channel"):
                 ephemeral=True,
             )
             return
+        await interaction.response.defer(ephemeral=True)
 
         client: MeowBot | None = None
         if hasattr(interaction.client, "db"):
             client = cast(MeowBot, interaction.client)
 
         if not client:
-            await interaction.response.send_message("Couldn't get the database!")
+            await interaction.edit_original_response(content="Couldn't get the database!")
             return
         if not interaction.message:
-            await interaction.response.send_message("No message... idk....")
+            await interaction.edit_original_response(content="No message... idk....")
             return
         ctx = await client.get_context(interaction.message)
         if not ctx.guild:
-            await interaction.response.send_message("Not a guild.")
+            await interaction.edit_original_response(content="Not a guild.")
             return
         try:
             channel = await commands.TextChannelConverter().convert(
@@ -96,18 +101,24 @@ class ChannelModal(discord.ui.Modal, title="Set Channel"):
             permissions = channel.permissions_for(ctx.guild.me)
 
             if not permissions.view_channel:
-                await interaction.response.send_message("I cannot access that channel!")
+                await interaction.edit_original_response(content="I cannot access that channel!")
                 return
             if not permissions.send_messages:
-                await interaction.response.send_message(
+                await interaction.edit_original_response(content=
                     "I cannot send messages in that channel!"
                 )
                 return
         except commands.BadArgument:
-            await interaction.response.send_message(
-                "Invalid channel. Please use a mention, ID, or name.", ephemeral=True
-            )
-            return
+            try:
+                channel = await commands.RoleConverter().convert(
+                    ctx, self.channel_input.value
+                )
+
+            except commands.BadArgument:
+                await interaction.edit_original_response(content=
+                    "Invalid channel or role. Please use a mention, ID, or name."
+                )
+                return
 
         await client.db.guilds.upd(self.guild_id, autocommit=True, **{self.setting: channel.id})
 
@@ -119,14 +130,21 @@ class ChannelModal(discord.ui.Modal, title="Set Channel"):
         else:
             print("Could not fetch logging cog correctly")
 
+        events_cog: Events | None = self.bot.get_cog_by_class(Events)
+        if events_cog:
+            await events_cog.update_roles(guild_id=ctx.guild.id)
+        else:
+            print("Could not fetch Events cog correctly")
+
+
         embed = await embed_helper(client.db, ctx)
         if not embed:
-            await interaction.response.send_message(
+            await interaction.edit_original_response(content=
                 "Failed to make embed! Report this issue as soon as possible"
             )
             return
 
-        await interaction.response.edit_message(embed=embed)
+        await interaction.edit_original_response(embed=embed)
         await interaction.followup.send(
             f"**{self.setting}** set to {channel.mention}", ephemeral=True
         )
@@ -145,6 +163,9 @@ class SetupView(discord.ui.View):
             discord.SelectOption(label="Member Logs", value="member_logs"),
             discord.SelectOption(label="Moderation Logs", value="mod_logs"),
             discord.SelectOption(label="Starboard Channel", value="sb_channel"),
+            discord.SelectOption(label="Event Ping Role ID", value="event_ping_id"),
+            discord.SelectOption(label="Event Host Role ID", value="event_host_id"),
+            discord.SelectOption(label="Event Announcements", value="event_announcements")
         ],
     )
     async def setting_dropdown(

@@ -99,7 +99,7 @@ class MeowBot(commands.Bot):
             await super().on_command_error(ctx, error)
             return
         await ctx.reply(Locale.get("overall.fail", error = error), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
-        
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -116,7 +116,7 @@ def main():
     intents = discord.Intents.all()
 
     client = MeowBot(
-        ext_dir="cogs", intents=intents, command_prefix="!", help_command=MeowHelp(), allowed_mentions=discord.AllowedMentions(roles=False, users=False, everyone=False)
+        ext_dir="cogs", intents=intents, command_prefix="!", help_command=MeowHelp()
     )
     handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
     token: str | None
