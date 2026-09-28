@@ -165,7 +165,8 @@ class SetupView(discord.ui.View):
             discord.SelectOption(label="Starboard Channel", value="sb_channel"),
             discord.SelectOption(label="Event Ping Role ID", value="event_ping_id"),
             discord.SelectOption(label="Event Host Role ID", value="event_host_id"),
-            discord.SelectOption(label="Event Announcements", value="event_announcements")
+            discord.SelectOption(label="Event Announcements", value="event_announcements"),
+            discord.SelectOption(label="Sleepy Role ID", value="sleepy_role_id")
         ],
     )
     async def setting_dropdown(

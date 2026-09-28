@@ -53,6 +53,8 @@ class Guilds:
         except: pass
         try: await self.db.execute("ALTER TABLE guilds ADD COLUMN event_announcements INTEGER")
         except: pass
+        try: await self.db.execute("ALTER TABLE guilds ADD COLUMN sleepy_role_id INTEGER")
+        except: pass
         await self.db.commit()
         print("Guilds...")
         return self
@@ -71,13 +73,13 @@ class Guilds:
             msg_logs: int | None = None, member_logs: int | None = None,
             mod_logs: int | None = None, sb_channel: int | None = None,
             event_ping_id: int | None = None, event_host_id: int | None = None,
-            event_announcements: int | None = None,
+            event_announcements: int | None = None, sleepy_role_id: int | None = None,
             autocommit: bool = True
         ):
         await self.db.execute("""
-            INSERT OR IGNORE INTO guilds (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements)
+            INSERT OR IGNORE INTO guilds (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements, sleepy_role_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements, sleepy_role_id)
         )
         if autocommit: await self.db.commit()
 
@@ -86,7 +88,7 @@ class Guilds:
             msg_logs: int | None = None, member_logs: int | None = None,
             mod_logs: int | None = None, sb_channel: int | None = None,
             event_ping_id: int | None = None, event_host_id: int | None = None,
-            event_announcements: int | None = None,
+            event_announcements: int | None = None, sleepy_role_id: int | None = None,
             autocommit: bool = True
         ):
         await self.db.execute("""
@@ -97,9 +99,12 @@ class Guilds:
                 sb_channel = COALESCE(?, sb_channel),
                 event_ping_id = COALESCE(?, event_ping_id),
                 event_host_id = COALESCE(?, event_host_id),
-                event_announcements = COALESCE(?, event_announcements)
+                event_announcements = COALESCE(?, event_announcements),
+                sleepy_role_id = COALESCE(?, sleepy_role_id)
             WHERE guild_id = ?
-            """, (msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements, guild_id)
+            """, (msg_logs, member_logs, mod_logs, sb_channel,
+                event_ping_id, event_host_id, event_announcements,
+                sleepy_role_id, guild_id)
         )
         if autocommit: await self.db.commit()
 
@@ -167,11 +172,12 @@ class Starboard:
             message_id INTEGER PRIMARY KEY,
             guild_id INTEGER NOT NULL,
             starboard_message_id INTEGER NOT NULL,
-            max_stars INTEGER DEFAULT 0,
 
             CONSTRAINT fk_sb_guild FOREIGN KEY (guild_id) REFERENCES guilds(guild_id) ON DELETE CASCADE
         )
         """)
+        try: await self.db.execute("ALTER TABLE starboard ADD COLUMN max_stars INTEGER DEFAULT 0")
+        except: pass
         await self.db.commit()
         print("Starboard...")
         return self
@@ -378,10 +384,13 @@ class Treats:
         )
         if autocommit: await self.db.commit()
 
-    async def upd(self, guild_id: int, user_id: int, balance: int, autocommit: bool = True):
-        await self.db.execute(
-            "UPDATE treats SET balance = ? WHERE guild_id = ? AND user_id = ?",
-            (balance, guild_id, user_id)
+    async def upsert(self, guild_id: int, user_id: int, amount: int = 0, autocommit: bool = True):
+        await self.db.execute("""
+            INSERT INTO treats (guild_id, user_id, balance)
+            VALUES (?, ?, ?)
+            ON CONFLICT (user_id, guild_id) DO UPDATE SET
+                balance = excluded.balance
+            """, (guild_id, user_id, amount)
         )
         if autocommit: await self.db.commit()
 
