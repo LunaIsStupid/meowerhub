@@ -30,51 +30,52 @@ class AFK(commands.Cog):
     def delete_cache_entry(self, guild_id: int, member_id: int) -> str:
         return self.cache.pop((guild_id, member_id), "")
 
-    async def set_afk(self, guild_id: int, member_id: int, message: str) -> str:
+    async def force(self, guild_id: int, member_id: int, message: str) -> str:
         message = message[:self.MAX_MESSAGE_LENGTH]
         await self.bot.db.afk.upsert(guild_id, member_id, message)
         self.update_cache_entry(guild_id, member_id, message)
         return message
 
-    async def reset_afk(self, guild_id: int, member_id: int) -> str:
+    async def reset(self, guild_id: int, member_id: int) -> str:
         await self.bot.db.afk.rem(guild_id, member_id)
         message = self.delete_cache_entry(guild_id, member_id)
         return message
 
 
-    @reuse.hybrid_cmd("afk")
+    @reuse.hybrid_group("afk", "set")
     @reuse.cmd_describe("afk", ["message"])
     @reuse.guild_only
     async def afk(self, ctx: commands.Context, *, message: str = ""):
         """Go AFK
         Usage:
         `!afk <message>`"""
-        message = await self.set_afk(ctx.guild.id, ctx.author.id, message)
+        message = await self.force(ctx.guild.id, ctx.author.id, message)
         await ctx.reply(Locale.get("afk.result"+(".meow" if message.startswith("meow") else ""), message = message), ephemeral=True)
 
-    @reuse.hybrid_cmd("forceafk")
-    @reuse.cmd_describe("forceafk", ["message", "member"])
+    @reuse.sub_cmd(afk, "afk.force")
+    @reuse.cmd_describe("afk.force", ["message", "member"])
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
-    async def forceafk(self, ctx: commands.Context, member: discord.Member, *, message: str):
+
+    async def afk_force(self, ctx: commands.Context, member: discord.Member, *, message: str):
         """Force an AFK message
         Usage:
         `!afk <user> <message>`"""
         Assert.is_not_bot(member)
-        message = await self.set_afk(ctx.guild.id, member.id, message)
-        await ctx.reply(Locale.get("forceafk.result"+(".meow" if message.startswith("meow") else ""), member = member.mention, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
+        message = await self.force(ctx.guild.id, member.id, message)
+        await ctx.reply(Locale.get("afk.force.result"+(".meow" if message.startswith("meow") else ""), member = member.mention, message = message), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
 
-    @reuse.hybrid_cmd("resetafk")
-    @reuse.cmd_describe("resetafk", ["member"])
+    @reuse.sub_cmd(afk, "afk.reset")
+    @reuse.cmd_describe("afk.reset", ["member"])
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
-    async def resetafk(self, ctx: commands.Context, member: discord.Member):
+    async def afk_reset(self, ctx: commands.Context, member: discord.Member):
         """Reset an AFK message
         Usage:
         `!resetafk <user>`"""
         Assert.is_not_bot(member)
-        message = await self.reset_afk(ctx.guild.id, member.id)
-        await ctx.reply(Locale.get("resetafk.result"+(".meow" if message.startswith("meow") else ""), member = member.mention), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
+        message = await self.reset(ctx.guild.id, member.id)
+        await ctx.reply(Locale.get("afk.reset.result"+(".meow" if message.startswith("meow") else ""), member = member.mention), allowed_mentions=reuse.NO_MENTION, ephemeral=True)
 
 
     @commands.Cog.listener()
@@ -87,8 +88,8 @@ class AFK(commands.Cog):
 
 
         if (message.guild.id, message.author.id) in self.cache and not message.content.startswith(">>"):
-            text = await self.reset_afk(message.guild.id, message.author.id)
-            return await message.reply(Locale.get("afk.reset"+(".meow" if text.startswith("meow") else ""), message = text))
+            text = await self.reset(message.guild.id, message.author.id)
+            return await message.reply(Locale.get("afk.removed"+(".meow" if text.startswith("meow") else ""), message = text))
             # Avoid duplicate messages if the author mentions themself
 
         for member in message.mentions:

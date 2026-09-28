@@ -145,6 +145,7 @@ class Pets(commands.Cog):
         `!petpet <user> <user> <user> <user>`
         """
         targets: list[reuse.USER | str] = [u for u in (user1, user2, user3, user4) if u is not None]
+        if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message): targets.append(ctx.message.reference.resolved.author)
         if not targets: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
         await ctx.defer()
         to_ping, files = await self.petpet(ctx, ctx.author.id, targets, ctx.guild)

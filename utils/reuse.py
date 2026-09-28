@@ -34,6 +34,12 @@ def app_cmd(key: str):
 def cmd(key: str, hidden: bool = False):
     return commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"), hidden=hidden)
 
+def hybrid_group(key: str, fallback: str | None = None):
+    return commands.hybrid_group(name = key, description = Locale.getFormatted(f"{key}.desc"), fallback = fallback)
+
+def sub_cmd(group, key: str):
+    return group.command(name = key.split(".")[-1], description = Locale.getFormatted(f"{key}.desc"))
+
 def cmd_describe(key: str, args: list[str]):
     kwargs = {}
     for arg in args:
