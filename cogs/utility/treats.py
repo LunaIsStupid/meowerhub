@@ -3,6 +3,7 @@ from discord.ext import commands
 
 import re
 import time
+import random
 import asyncio
 import datetime
 
@@ -13,7 +14,6 @@ sys.path.append("...")
 from utils import reuse
 from utils.locales import Locale
 from utils.asserted import Assert
-
 
 class Treats(commands.Cog):
     ARCANE_ID = 437808476106784770
@@ -29,12 +29,15 @@ class Treats(commands.Cog):
         90: 20,
         100: 20
     }
-    EAT_COOLDOWN = commands.CooldownMapping.from_cooldown(1, 60, commands.BucketType.user)
-    FEED_COOLDOWN = commands.CooldownMapping.from_cooldown(1, 60, commands.BucketType.user)
     SLEEPY_TIME = 10 # seconds
+    FEED_REPLIES = [
+        "test"
+    ]
 
     def __init__(self, bot: MeowBot):
         self.bot: MeowBot = bot
+        self.eat_cooldown = commands.CooldownMapping.from_cooldown(1, 60, commands.BucketType.user)
+        self.feed_cooldown = commands.CooldownMapping.from_cooldown(1, 60, commands.BucketType.user)
 
     async def sleep(self, member: discord.Member):
         settings = await self.bot.db.guilds.get(member.guild.id)
@@ -106,7 +109,7 @@ class Treats(commands.Cog):
     @reuse.sub_cmd(treats, "treats.eat")
     @reuse.guild_only
     async def treats_eat(self, ctx: commands.Context):
-        bucket = self.EAT_COOLDOWN.get_bucket(ctx.message)
+        bucket = self.eat_cooldown.get_bucket(ctx.message)
         if not bucket: return
         retry_after = bucket.get_retry_after(time.time())
         if retry_after: raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.user)
@@ -121,6 +124,34 @@ class Treats(commands.Cog):
 
             if not await self.sleep(ctx.author): return await ctx.reply("You ate a treat, it was delicious, but nothing else happened")
             await ctx.reply("You ate a treat, it was delicious, you feel really sleepy")
+        except Exception as e:
+            print(e)
+            await ctx.reply(Locale.get("overall.fail", error = f"\n-#{e}"), ephemeral = True)
+
+    @reuse.sub_cmd(treats, "treats.feed")
+    @reuse.guild_only
+    async def treats_feed(self, ctx: commands.Context, member: discord.Member | None = None):
+        bucket = self.feed_cooldown.get_bucket(ctx.message)
+        if not bucket: return
+        retry_after = bucket.get_retry_after(time.time())
+        if retry_after: raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.user)
+
+        if not member and ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message): member = ctx.message.reference.resolved.author
+        if not member: return ctx.reply("Mention a member or reply to their message")
+
+        if member.id != ctx.guild.me.id: Assert.is_not_bot(member)
+
+        row = await self.bot.db.treats.get(ctx.guild.id, ctx.author.id) or {"balance": 0}
+        if row["balance"] < 1: return await ctx.reply(Locale.get("treats.not_enough", treats = row["balance"]))
+
+        await self.bot.db.treats.add(ctx.guild.id, ctx.author.id, -1)
+
+        try:
+            bucket.update_rate_limit(time.time())
+
+            if member.id == ctx.guild.me.id: return await ctx.reply(random.choice(self.FEED_REPLIES))
+            view = AcceptTreatView(ctx.author, member, self.bot, self)
+            await ctx.reply(f"{ctx.author.mention} offered {member.mention} a treat", view=view)
         except Exception as e:
             print(e)
             await ctx.reply(Locale.get("overall.fail", error = f"\n-#{e}"), ephemeral = True)
@@ -142,6 +173,45 @@ class Treats(commands.Cog):
     @treats_gift.error
     async def cooldown_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.CommandOnCooldown): await ctx.send(f"Try again in {error.retry_after:.1f}s", ephemeral=True) # TODO: LOCALES
+
+
+# https://fallendeity.github.io/discord.py-masterclass/views/#basic-view
+class AcceptTreatView(discord.ui.View):
+    message: discord.Message | None = None
+
+    def __init__(self, author: discord.Member, receiver: discord.Member, bot: MeowBot, treats_cog: Treats, timeout: float = 60*3):
+        super().__init__(timeout=timeout)
+        self.author = author
+        self.receiver = receiver
+        self.bot = bot
+        self.treats_cog = treats_cog
+
+    async def interaction_check(self, interaction: discord.Interaction[discord.Client]) -> bool:
+        if interaction.user.id not in (self.receiver.id, self.author.id):
+            await interaction.response.send_message("This is not for you, silly.", ephemeral = True)
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        await self.bot.db.treats.add(self.author.guild.id, self.author.id, 1)
+        if not self.message: return
+        try: await self.message.edit(content="Automatically declined after 3 minutes.", view=None)
+        except: pass
+
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.green)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button[AcceptTreatView]) -> None:
+        if interaction.user.id == self.author.id: return await interaction.response.send_message("You cant accept this, silly", ephemeral = True)
+        self.stop()
+        await interaction.response.edit_message(content=f"{interaction.user.mention} accepted the treat.", view=None)
+        if not await self.treats_cog.sleep(interaction.user): return await interaction.response.send_message("You ate a treat, it was delicious, but nothing else happened", ephemeral = True)
+        await interaction.response.send_message("You ate a treat, it was delicious, you feel really sleepy", ephemeral = True)
+        # TODO: add locales later
+
+    @discord.ui.button(label="Decline", style=discord.ButtonStyle.red)
+    async def decline(self, interaction: discord.Interaction, button: discord.ui.Button[AcceptTreatView]) -> None:
+        self.stop()
+        await self.bot.db.treats.add(interaction.guild.id, self.author.id, 1)
+        await interaction.response.edit_message(content=f"{interaction.user.mention} declined the treat.", view=None)
 
 async def setup(bot: MeowBot):
     await bot.add_cog(Treats(bot))
