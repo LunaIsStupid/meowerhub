@@ -45,6 +45,14 @@ def cmd_describe(key: str, args: list[str]):
     for arg in args:
         kwargs[arg] = Locale.getFormatted(f"{key}.{arg}")
     return discord.app_commands.describe(**kwargs)
+    
+# apparently str.isnumeric() doesnt works with negatives
+def isnumeric(s):
+    try:
+        int(s)
+        return True
+    except ValueError: return False
+
 
 class IDS: # readability, add when needed
     ZEPHYR = 416062410022191104

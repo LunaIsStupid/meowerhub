@@ -69,6 +69,14 @@ class MeowBot(commands.Bot):
         except commands.UserNotFound: pass
         return string
 
+    async def extract_member_and_amount(self, ctx: commands.Context, member: str, amount: int | None):
+        target: reuse.USER | str | None = None
+        if member and reuse.isnumeric(member) and ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
+            target = ctx.message.reference.resolved.author
+            amount = int(member)
+        elif isinstance(amount, int): target = await self.extract_user(ctx, member)
+        return target, amount
+
     async def user_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         search = (current or "").lower().lstrip('@')
         choices = []

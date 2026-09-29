@@ -45,10 +45,12 @@ class Treats(commands.Cog):
         role = member.guild.get_role(settings["sleepy_role_id"])
         if not role: return False
 
-        await member.timeout(datetime.timedelta(seconds=self.SLEEPY_TIME))
-        await member.add_roles(role)
-        asyncio.create_task(self.unsleep(member, role))
-        return True
+        try:
+            await member.timeout(datetime.timedelta(seconds=self.SLEEPY_TIME))
+            await member.add_roles(role)
+            asyncio.create_task(self.unsleep(member, role))
+            return True
+        except: return False
 
     async def unsleep(self, member: discord.Member, role: discord.Role):
         await asyncio.sleep(self.SLEEPY_TIME)
@@ -88,21 +90,24 @@ class Treats(commands.Cog):
             await ctx.reply(Locale.get("treats.set.fail", error = f"\n-#{e}"), ephemeral = True)
 
     @reuse.sub_cmd(treats, "treats.gift")
-    @reuse.cmd_describe("treats.gift", ["amount", "member"])
+    @reuse.cmd_describe("treats.gift", ["member", "amount"])
     @reuse.guild_only
-    async def treats_gift(self, ctx: commands.Context, amount: int, member: discord.Member | None = None):
-        if not member and ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message): member = ctx.message.reference.resolved.author
-        if not member: member = ctx.author
+    async def treats_gift(self, ctx: commands.Context, member: str, amount: int | None = None):
+        target, amount = await self.bot.extract_member_and_amount(ctx, member, amount)
+        if not target or not isinstance(target, discord.Member): return await ctx.reply("Mention a member or reply to their message")
+        Assert.is_not_bot(target)
 
-        Assert.is_not_bot(member)
-        if amount < 0: return await ctx.reply(Locale.get("error.no_negatives"))
+        if target.id == ctx.author.id: return await ctx.reply("you silly")
+
+        if amount == 0: return await ctx.reply("wow you want to offer them nothing")
+        if amount < 0: return await ctx.reply("we are stealing apparently?")
 
         row = await self.bot.db.treats.get(ctx.guild.id, ctx.author.id) or {"balance": 0}
         if row["balance"] < amount: return await ctx.reply(Locale.get("treats.not_enough", treats = row["balance"]))
 
         try:
-            if amount > 0: await self.bot.db.treats.transfer(ctx.guild.id, ctx.author.id, member.id, amount)
-            await ctx.reply(Locale.get("treats.gift.result"+(".zero" if amount == 0 else ""), member = member.mention, treats = amount), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
+            if amount > 0: await self.bot.db.treats.transfer(ctx.guild.id, ctx.author.id, target.id, amount)
+            await ctx.reply(Locale.get("treats.gift.result"+(".zero" if amount == 0 else ""), member = target.mention, treats = amount), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
         except Exception as e:
             await ctx.reply(Locale.get("treats.gift.fail", error = f"\n-#{e}"), ephemeral = True)
 
@@ -130,16 +135,22 @@ class Treats(commands.Cog):
 
     @reuse.sub_cmd(treats, "treats.feed")
     @reuse.guild_only
-    async def treats_feed(self, ctx: commands.Context, member: discord.Member | None = None):
+    async def treats_feed(self, ctx: commands.Context, member: str, amount: int | None = 1):
         bucket = self.feed_cooldown.get_bucket(ctx.message)
         if not bucket: return
         retry_after = bucket.get_retry_after(time.time())
         if retry_after: raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.user)
 
-        if not member and ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message): member = ctx.message.reference.resolved.author
-        if not member: return ctx.reply("Mention a member or reply to their message")
+        target, amount = await self.bot.extract_member_and_amount(ctx, member, amount)
+        if not target or not isinstance(amount, int) or not isinstance(target, discord.Member): return await ctx.reply("Mention a member or reply to their message")
 
-        if member.id != ctx.guild.me.id: Assert.is_not_bot(member)
+        if target.id == ctx.author.id: return await ctx.reply("you silly")
+
+        if amount > 1: return await ctx.reply("more than one? you want them to explode")
+        if amount == 0: return await ctx.reply("wow you want to offer them nothing")
+        if amount < 0: return await ctx.reply("you so generous")
+
+        if target.id != ctx.guild.me.id: Assert.is_not_bot(target)
 
         row = await self.bot.db.treats.get(ctx.guild.id, ctx.author.id) or {"balance": 0}
         if row["balance"] < 1: return await ctx.reply(Locale.get("treats.not_enough", treats = row["balance"]))
@@ -149,9 +160,9 @@ class Treats(commands.Cog):
         try:
             bucket.update_rate_limit(time.time())
 
-            if member.id == ctx.guild.me.id: return await ctx.reply(random.choice(self.FEED_REPLIES))
-            view = AcceptTreatView(ctx.author, member, self.bot, self)
-            await ctx.reply(f"{ctx.author.mention} offered {member.mention} a treat", view=view)
+            if target.id == ctx.guild.me.id: return await ctx.reply(random.choice(self.FEED_REPLIES))
+            view = AcceptTreatView(ctx.author, target, self.bot, self)
+            await ctx.reply(f"{ctx.author.mention} offered {target.mention} a treat", view=view)
         except Exception as e:
             print(e)
             await ctx.reply(Locale.get("overall.fail", error = f"\n-#{e}"), ephemeral = True)
