@@ -20,25 +20,25 @@ from utils.asserted import Assert
 
 class Pets(commands.Cog):
     PET_REPLIES: list[str] = [
-        "*\\*blows up\\**",
-        "*\\*bites your hand\\**",
-        "*\\*blep\\**",
-        "*\\*paws at you\\**",
-        "*\\*licks you\\**",
+        "*\\*Blows up\\**",
+        "*\\*Bites your hand\\**",
+        "*\\*Blep\\**",
+        "*\\*Paws at you\\**",
+        "*\\*Licks you\\**",
         ">w<",
         "^w^",
         ">///<",
         ":3",
-        "meow",
-        "mmnrp",
-        "purr",
-        "purrrrrrrrr",
-        "prrrrrr",
-        "awawawawa",
-        "mroow",
-        "mrrrp",
-        "mraow",
-        "meawwww",
+        "Meow",
+        "Mmnrp",
+        "Purr",
+        "Purrrrrrrrr",
+        "Prrrrrr",
+        "Awawawawa",
+        "Mroow",
+        "Mrrrp",
+        "Mraow",
+        "Meawwww",
     ]
 
     MAX_PETPET_COUNT = 4
@@ -145,6 +145,7 @@ class Pets(commands.Cog):
         `!petpet <user> <user> <user> <user>`
         """
         targets: list[reuse.USER | str] = [u for u in (user1, user2, user3, user4) if u is not None]
+        if not targets and ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message): targets.append(ctx.message.reference.resolved.author)
         if not targets: return await ctx.send(Locale.get("error.no_members_arg"), ephemeral=True)
         await ctx.defer()
         to_ping, files = await self.petpet(ctx, ctx.author.id, targets, ctx.guild)

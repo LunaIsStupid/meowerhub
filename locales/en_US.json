@@ -8,7 +8,9 @@
     "error.owner_user": "You cannot do this action to server owner.",
     "error.bot_user": "You cannot do this action to a bot.",
     "error.missing_reply": "You must reply to a message to use this command.",
+    "error.missing_reply_or_member": "You must reply to a message or mention a member to use this command.",
     "error.message_not_resolved": "Couldn't resolve the message to process for this command.",
+    "error.no_negatives": "You cant use negative values for this.",
 
     "overall.fail": "There was an error executing this command: {error}",
 
@@ -75,6 +77,12 @@
     "warn.result": "{member} successfully warned. Reason: {reason}",
     "warn.fail": "Could not warn that member: {error}",
 
+    "warns.desc": "Warn a member, irreversable",
+    "warns.member": "The member to get warns from",
+    "warns.entry": "- №{id} at {timestamp} by {moderator}: {reason}\n",
+    "warns.result": "{member} has {count} warn(s):\n{warns}",
+    "warns.fail": "Could not get warns of that member: {error}",
+
     "purge.desc": "Purge a channel",
     "purge.count": "Amount of messages to purge",
     "purge.result": "Successfully purrrrrged {count} messages.",
@@ -84,21 +92,21 @@
     "afk.message": "AFK message",
     "afk.result": "AFK set: {message}",
     "afk.result.meow": "MROW mew: {message}",
-    "afk.reset": "You are no longer AFK!",
-    "afk.reset.meow": "Meou maw mow meow MROW!",
+    "afk.removed": "You are no longer AFK!",
+    "afk.removed.meow": "Meou maw mow meow MROW!",
     "afk.reminder": "{member} is AFK: {message}",
     "afk.reminder.meow": "{member} mew MROW: {message}",
 
-    "forceafk.desc": "Force someone AFK",
-    "forceafk.user": "User to force AFK",
-    "forceafk.message": "AFK message",
-    "forceafk.result": "AFK forced for {member}: {message}",
-    "forceafk.result.meow": "MROW meow mow {member}: {message}",
+    "afk.force.desc": "Force someone AFK",
+    "afk.force.user": "User to force AFK",
+    "afk.force.message": "AFK message",
+    "afk.force.result": "AFK forced for {member}: {message}",
+    "afk.force.result.meow": "MROW meow mow {member}: {message}",
 
-    "resetafk.desc": "Reset someone's AFK",
-    "resetafk.user": "User to reset AFK",
-    "resetafk.result": "AFK reset for {member}",
-    "resetafk.result.meow": "MROW mew mow {member}",
+    "afk.reset.desc": "Reset someone's AFK",
+    "afk.reset.user": "User to reset AFK",
+    "afk.reset.result": "AFK reset for {member}",
+    "afk.reset.result.meow": "MROW mew mow {member}",
 
     "setpetreply.desc": "Set your pet message",
     "setpetreply.message": "Pet message",
@@ -106,10 +114,42 @@
     "setpetreply.reset": "Your pet message reset",
 
     "forcepetreply.desc": "Force someone pet message",
-    "forcepetreply.member": "User to force pet message",
+    "forcepetreply.member": "Member to force pet message",
     "forcepetreply.message": "Pet message",
     "forcepetreply.result": "Forced pet message for {member} as {message}",
     "forcepetreply.reset": "Reset pet message for {member}",
 
-    "starthis.success": "Successfully starred {author_ping}'s message!"
+    "starthis.success": "Successfully starred {author_ping}'s message!",
+
+    "treats.on_levelup": "Oh wow, {member} has yapped enough to gain ten more levels! There there, have {treats} cat treats.",
+    "treats.not_enough": "Not enough treats (you have {treats} right now)",
+
+    "treats.desc": "See member's cat treats amount",
+    "treats.member": "Member to check",
+    "treats.result": "{member} has {treats} cat treats.",
+    "treats.fail": "Could not get treats: {error}",
+
+    "treats.set.desc": "Set member's cat treats amount",
+    "treats.set.amount": "Amount of treats to set",
+    "treats.set.member": "Member to set treats for",
+    "treats.set.result": "Successfully set cat treats amount to {treats} for {member}.",
+    "treats.set.fail": "Could not set treats: {error}",
+
+    "treats.gift.desc": "Gift cat treats to someone",
+    "treats.gift.amount": "Amount of treats to gift",
+    "treats.gift.member": "Member to gift treats to",
+    "treats.gift.result": "Successfully gifted {treats} cat treats to {member}.",
+    "treats.gift.result.zero": "Successfully gifted zero cat treats to {member}, wow how kind of you",
+    "treats.gift.fail": "Could not gift treats: {error}",
+
+    "treats.eat.desc": "Eat a treat",
+
+    "killeveryone.desc": "Kill everyone",
+
+    "bam.desc": "Bam a member",
+    "bam.member": "A member to bam",
+    "bam.result": ".{member} has been banned. Reason: No reason provided.",
+
+    "nuhuh.desc": "nuhuh",
+    "nuhuh.result": ".{member} has been unbanned. Reason: No reason provided."
 }

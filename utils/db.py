@@ -53,6 +53,8 @@ class Guilds:
         except: pass
         try: await self.db.execute("ALTER TABLE guilds ADD COLUMN event_announcements INTEGER")
         except: pass
+        try: await self.db.execute("ALTER TABLE guilds ADD COLUMN sleepy_role_id INTEGER")
+        except: pass
         await self.db.commit()
         print("Guilds...")
         return self
@@ -71,13 +73,13 @@ class Guilds:
             msg_logs: int | None = None, member_logs: int | None = None,
             mod_logs: int | None = None, sb_channel: int | None = None,
             event_ping_id: int | None = None, event_host_id: int | None = None,
-            event_announcements: int | None = None,
+            event_announcements: int | None = None, sleepy_role_id: int | None = None,
             autocommit: bool = True
         ):
         await self.db.execute("""
-            INSERT OR IGNORE INTO guilds (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements)
+            INSERT OR IGNORE INTO guilds (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements, sleepy_role_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (guild_id, msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements, sleepy_role_id)
         )
         if autocommit: await self.db.commit()
 
@@ -86,7 +88,7 @@ class Guilds:
             msg_logs: int | None = None, member_logs: int | None = None,
             mod_logs: int | None = None, sb_channel: int | None = None,
             event_ping_id: int | None = None, event_host_id: int | None = None,
-            event_announcements: int | None = None,
+            event_announcements: int | None = None, sleepy_role_id: int | None = None,
             autocommit: bool = True
         ):
         await self.db.execute("""
@@ -97,9 +99,12 @@ class Guilds:
                 sb_channel = COALESCE(?, sb_channel),
                 event_ping_id = COALESCE(?, event_ping_id),
                 event_host_id = COALESCE(?, event_host_id),
-                event_announcements = COALESCE(?, event_announcements)
+                event_announcements = COALESCE(?, event_announcements),
+                sleepy_role_id = COALESCE(?, sleepy_role_id)
             WHERE guild_id = ?
-            """, (msg_logs, member_logs, mod_logs, sb_channel, event_ping_id, event_host_id, event_announcements, guild_id)
+            """, (msg_logs, member_logs, mod_logs, sb_channel,
+                event_ping_id, event_host_id, event_announcements,
+                sleepy_role_id, guild_id)
         )
         if autocommit: await self.db.commit()
 
@@ -171,6 +176,8 @@ class Starboard:
             CONSTRAINT fk_sb_guild FOREIGN KEY (guild_id) REFERENCES guilds(guild_id) ON DELETE CASCADE
         )
         """)
+        try: await self.db.execute("ALTER TABLE starboard ADD COLUMN max_stars INTEGER DEFAULT 0")
+        except: pass
         await self.db.commit()
         print("Starboard...")
         return self
@@ -337,6 +344,65 @@ class Events:
         await self.db.execute("DELETE FROM events WHERE guild_id = ?", (guild_id,))
         if autocommit: await self.db.commit()
 
+class Treats:
+    def __init__(self, db: aiosqlite.Connection) -> None:
+        self.db = db
+
+    async def setup(self):
+        await self.db.execute("""
+        CREATE TABLE IF NOT EXISTS treats(
+            guild_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            balance INTEGER DEFAULT 0,
+
+            CONSTRAINT fk_treats_guild FOREIGN KEY (guild_id) REFERENCES guilds(guild_id) ON DELETE CASCADE,
+            CONSTRAINT fk_treats_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+
+            PRIMARY KEY (user_id, guild_id)
+        )
+        """)
+        await self.db.commit()
+        print("Treats...")
+        return self
+
+    async def get(self, guild_id: int, user_id: int):
+        async with self.db.execute("SELECT * FROM treats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id)) as cursor:
+            return await cursor.fetchone()
+
+    async def get_many(self, guild_id: int, count: int = 0):
+        async with self.db.execute("SELECT * FROM treats WHERE guild_id = ?", (guild_id,)) as cursor:
+            if count <= 0: return await cursor.fetchall()
+            else: return await cursor.fetchmany(count)
+
+    async def add(self, guild_id: int, user_id: int, amount: int = 0, autocommit: bool = True):
+        await self.db.execute("""
+            INSERT INTO treats (guild_id, user_id, balance)
+            VALUES (?, ?, ?)
+            ON CONFLICT (user_id, guild_id) DO UPDATE SET
+                balance = balance + excluded.balance
+            """, (guild_id, user_id, amount)
+        )
+        if autocommit: await self.db.commit()
+
+    async def upsert(self, guild_id: int, user_id: int, amount: int = 0, autocommit: bool = True):
+        await self.db.execute("""
+            INSERT INTO treats (guild_id, user_id, balance)
+            VALUES (?, ?, ?)
+            ON CONFLICT (user_id, guild_id) DO UPDATE SET
+                balance = excluded.balance
+            """, (guild_id, user_id, amount)
+        )
+        if autocommit: await self.db.commit()
+
+    async def transfer(self, guild_id: int, from_user_id: int, to_user_id: int, amount: int, autocommit: bool = True):
+        await self.add(guild_id, from_user_id, -amount, autocommit=False)
+        await self.add(guild_id, to_user_id, amount, autocommit=False)
+        if autocommit: await self.db.commit()
+
+    async def rem(self, guild_id: int, user_id: int, autocommit: bool = True):
+        await self.db.execute("DELETE FROM treats WHERE guild_id = ? AND user_id = ?", (guild_id, user_id))
+        if autocommit: await self.db.commit()
+
 
 class DB:
     db: aiosqlite.Connection
@@ -347,6 +413,7 @@ class DB:
     afk: Afk
     pet: Pet
     events: Events
+    treats: Treats
 
     async def setup(self, path = "database.db"):
         print("Setting up database...")
@@ -362,6 +429,7 @@ class DB:
         self.afk = await Afk(self.db).setup()
         self.pet = await Pet(self.db).setup()
         self.events = await Events(self.db).setup()
+        self.treats = await Treats(self.db).setup()
         print("Database ready!")
 
         return self

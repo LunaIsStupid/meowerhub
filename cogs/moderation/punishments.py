@@ -171,7 +171,6 @@ class ModCommands(commands.Cog):
         Usage:
         `!warn <member> [reason]`"""
         # Passthrough method so it gets grouped with the moderation commands, but logs the warn.
-        # TODO: make easier way to get the logger cog
 
         Assert.is_not_bot(member)
         Assert.is_not_author(ctx, member)
@@ -187,6 +186,31 @@ class ModCommands(commands.Cog):
             await ctx.send(Locale.get("warn.result", member = member.mention, reason = reason, id = warning_id))
         except discord.HTTPException as e:
             await ctx.send(Locale.get("warn.fail", error = f"\n-#{e}"), ephemeral = True)
+
+    @reuse.hybrid_cmd("warns")
+    @reuse.cmd_describe("warns", ["member"])
+    @reuse.guild_only
+    @reuse.check_permissions(moderate_members = True)
+    async def warns(self, ctx: commands.Context, member: discord.Member | None = None):
+        if not member and ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message): member = ctx.message.reference.resolved.author 
+
+        if not member: return ctx.reply(Locale.get("error.no_members_arg"), ephemeral = True)
+        Assert.is_not_bot(member)
+
+        try:
+            warnings = list(await self.bot.db.warnings.get_many(ctx.guild.id, member.id))
+            content = Locale.get(
+                "warns.result", member = member.mention, count = len(warnings),
+                warns = "".join([Locale.get("warns.entry",
+                    id = row["id"], timestamp = row["timestamp"],
+                    moderator = row["moderator_id"], reason = row["reason"])
+                for row in warnings])
+            )
+
+            await ctx.send(content[:2000])
+        except discord.HTTPException as e:
+            await ctx.send(Locale.get("warns.fail", error = f"\n-#{e}"), ephemeral = True)
+
 
     @reuse.hybrid_cmd("purge")
     @reuse.cmd_describe("purge", ["count"])
