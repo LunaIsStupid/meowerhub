@@ -69,10 +69,15 @@ class MeowBot(commands.Bot):
         except commands.UserNotFound: pass
         return string
 
-    async def extract_member_and_amount(self, ctx: commands.Context, member: str, amount: int | None):
+    async def extract_reply_user(self, ctx: commands.Context):
+        if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
+            return ctx.message.reference.resolved.author
+
+    async def extract_member_and_amount(self, ctx: commands.Context, member: str, aglitchesmount: int | None):
         target: reuse.USER | str | None = None
-        if member and reuse.isnumeric(member) and ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
-            target = ctx.message.reference.resolved.author
+        reply_user = self.extract_reply_user(ctx)
+        if member and reuse.isnumeric(member) and reply_user:
+            target = reply_user
             amount = int(member)
         elif isinstance(amount, int): target = await self.extract_user(ctx, member)
         return target, amount
@@ -124,7 +129,7 @@ def main():
     intents = discord.Intents.all()
 
     client = MeowBot(
-        ext_dir="cogs", intents=intents, command_prefix="!", help_command=MeowHelp()
+        ext_dir="cogs", intents=intents, command_prefix="!", help_command=MeowHelp(), case_insensitive = True
     )
     handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
     token: str | None

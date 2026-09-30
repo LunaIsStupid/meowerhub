@@ -113,11 +113,15 @@ class Treats(commands.Cog):
 
     @reuse.sub_cmd(treats, "treats.eat")
     @reuse.guild_only
-    async def treats_eat(self, ctx: commands.Context):
+    async def treats_eat(self, ctx: commands.Context, amount: int | None = 1):
         bucket = self.eat_cooldown.get_bucket(ctx.message)
         if not bucket: return
         retry_after = bucket.get_retry_after(time.time())
         if retry_after: raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.user)
+
+        if amount > 1: return await ctx.reply("you wanna explode?")
+        if amount == 0: return await ctx.reply("you want to eat air apparently?")
+        if amount < 0: return await ctx.reply("no infinite treats glitches sowwy")
 
         row = await self.bot.db.treats.get(ctx.guild.id, ctx.author.id) or {"balance": 0}
         if row["balance"] < 1: return await ctx.reply(Locale.get("treats.not_enough", treats = row["balance"]))

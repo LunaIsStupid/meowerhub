@@ -31,8 +31,8 @@ def hybrid_cmd(key: str, hidden: bool = False):
 def app_cmd(key: str):
     return discord.app_commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"))
 
-def cmd(key: str, hidden: bool = False):
-    return commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"), hidden=hidden)
+def cmd(key: str, hidden: bool = False, aliases = []):
+    return commands.command(name = key, description = Locale.getFormatted(f"{key}.desc"), hidden=hidden, aliases=aliases)
 
 def hybrid_group(key: str, fallback: str | None = None):
     return commands.hybrid_group(name = key, description = Locale.getFormatted(f"{key}.desc"), fallback = fallback)

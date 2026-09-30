@@ -8,6 +8,7 @@
     "error.owner_user": "You cannot do this action to server owner.",
     "error.bot_user": "You cannot do this action to a bot.",
     "error.missing_reply": "You must reply to a message to use this command.",
+    "error.missing_reply_or_member": "You must reply to a message or mention a member to use this command.",
     "error.message_not_resolved": "Couldn't resolve the message to process for this command.",
     "error.no_negatives": "You cant use negative values for this.",
 
@@ -141,5 +142,14 @@
     "treats.gift.result.zero": "Successfully gifted zero cat treats to {member}, wow how kind of you",
     "treats.gift.fail": "Could not gift treats: {error}",
 
-    "treats.eat.desc": "Eat a treat"
+    "treats.eat.desc": "Eat a treat",
+
+    "killeveryone.desc": "Kill everyone",
+
+    "bam.desc": "Bam a member",
+    "bam.member": "A member to bam",
+    "bam.result": ".{member} has been banned. Reason: No reason provided.",
+
+    "nuhuh.desc": "nuhuh",
+    "nuhuh.result": ".{member} has been unbanned. Reason: No reason provided."
 }
