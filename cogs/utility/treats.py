@@ -113,7 +113,7 @@ class Treats(commands.Cog):
 
     @reuse.sub_cmd(treats, "treats.eat")
     @reuse.guild_only
-    async def treats_eat(self, ctx: commands.Context, amount: int | None = 1):
+    async def treats_eat(self, ctx: commands.Context, amount: int = 1):
         bucket = self.eat_cooldown.get_bucket(ctx.message)
         if not bucket: return
         retry_after = bucket.get_retry_after(time.time())
@@ -184,7 +184,7 @@ class Treats(commands.Cog):
 
         await self.bot.db.treats.add(message.guild.id, int(user_id), treat)
         await message.reply(Locale.get("treats.on_levelup", member = f"<@{user_id}>", treats = treat))
-        
+
     @treats_gift.error
     async def cooldown_error(self, ctx: commands.Context, error):
         if isinstance(error, commands.CommandOnCooldown): await ctx.send(f"Try again in {error.retry_after:.1f}s", ephemeral=True) # TODO: LOCALES

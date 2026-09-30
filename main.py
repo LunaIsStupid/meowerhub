@@ -75,7 +75,7 @@ class MeowBot(commands.Bot):
 
     async def extract_member_and_amount(self, ctx: commands.Context, member: str, aglitchesmount: int | None):
         target: reuse.USER | str | None = None
-        reply_user = self.extract_reply_user(ctx)
+        reply_user = await self.extract_reply_user(ctx)
         if member and reuse.isnumeric(member) and reply_user:
             target = reply_user
             amount = int(member)
