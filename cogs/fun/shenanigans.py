@@ -23,7 +23,7 @@ class Shenanigans(commands.Cog):
     @reuse.guild_only
     @reuse.check_permissions(administrator = True)
     async def killeveryone(self, ctx: commands.Context):
-        items = ["preparing to ban everyone...."] * 4 + [f"banning {member.mention}" for member in ctx.guild.members] + ["successfully banned everyone"]
+        items = ["Preparing to ban everyone...."] * 4 + [f"Banning {member.mention}..." for member in ctx.guild.members] + ["Successfully banned everyone!"]
 
         message = None
         for item in items:
