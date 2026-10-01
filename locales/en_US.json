@@ -139,7 +139,7 @@
     "treats.gift.amount": "Amount of treats to gift",
     "treats.gift.member": "Member to gift treats to",
     "treats.gift.result": "Successfully gifted {treats} cat treats to {member}.",
-    "treats.gift.result.zero": "Successfully gifted zero cat treats to {member}, wow how kind of you",
+    "treats.gift.result.zero": "Successfully gifted ZERO cat treats to {member}, wow how kind of you",
     "treats.gift.fail": "Could not gift treats: {error}",
 
     "treats.eat.desc": "Eat a treat",

@@ -19,7 +19,7 @@ class Assert:
 
     @classmethod
     def is_not_bot(cls, member: discord.Member | discord.User, autosend = True):
-        cls.a(not member.bot, "error.author_user", autosend)
+        cls.a(not member.bot, "error.bot_user", autosend)
 
     @classmethod
     def has_permissions(cls, ctx: commands.Context, member: discord.Member | None = None, autosend = True, **kwargs):

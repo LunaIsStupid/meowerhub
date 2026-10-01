@@ -28,7 +28,8 @@ class OnMessage(commands.Cog):
 
     def parse_dice(self, string, prefix):
         mult, chips = string[len(prefix):].split("d") # haha balatro im so funny
-        return int(mult) if mult else 1, int(chips)
+        chips, *add = chips.replace("-", "+-").split("+")
+        return int(mult) if mult else 1, int(chips), sum(list(map(int, add)))
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -39,9 +40,10 @@ class OnMessage(commands.Cog):
             return await message.reply(self.MENTION_REPLY)
 
         # dice
-        mult, dice = self.parse_dice(message.content, self.bot.command_prefix)
+        mult, dice, add = self.parse_dice(message.content, self.bot.command_prefix)
         if mult and 0 < mult <= self.DICE_MAX_MULT and dice and 0 < dice <= self.DICE_MAX_DICE:
             result = await self.roll(mult,dice)
+            result = min(mult * dice, max(1, result + (add * mult)))
             return await message.reply(str(result))
 
 

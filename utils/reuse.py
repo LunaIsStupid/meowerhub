@@ -51,7 +51,7 @@ def isnumeric(s):
     try:
         int(s)
         return True
-    except ValueError: return False
+    except (ValueError, TypeError): return False
 
 
 class IDS: # readability, add when needed

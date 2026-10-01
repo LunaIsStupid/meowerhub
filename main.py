@@ -73,14 +73,23 @@ class MeowBot(commands.Bot):
         if ctx.message.reference and isinstance(ctx.message.reference.resolved, discord.Message):
             return ctx.message.reference.resolved.author
 
-    async def extract_member_and_amount(self, ctx: commands.Context, member: str, aglitchesmount: int | None):
-        target: reuse.USER | str | None = None
-        reply_user = await self.extract_reply_user(ctx)
-        if member and reuse.isnumeric(member) and reply_user:
-            target = reply_user
-            amount = int(member)
-        elif isinstance(amount, int): target = await self.extract_user(ctx, member)
-        return target, amount
+    async def extract_member_and_amount(self, ctx: commands.Context, member: str | None, amount: str | None):
+        target_user: reuse.USER | str | None = None
+        target_amount: int | None = None
+
+        member_user = await self.extract_user(ctx, member) if member is not None else None
+        amount_user = await self.extract_user(ctx, amount) if amount is not None else None
+        is_member_number, is_amount_number = reuse.isnumeric(member), reuse.isnumeric(amount)
+
+        if isinstance(member_user, discord.User | discord.Member): target_user = member_user
+        elif is_member_number: target_amount = int(member)
+
+        if isinstance(amount_user, discord.User | discord.Member): target_user = amount_user
+        elif is_amount_number: target_amount = int(amount)
+
+        if not target_user or not isinstance(target_user, discord.User | discord.Member): target_user = await self.extract_reply_user(ctx)
+
+        return target_user, target_amount
 
     async def user_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         search = (current or "").lower().lstrip('@')
@@ -107,6 +116,9 @@ class MeowBot(commands.Bot):
         error = getattr(error, "original", error)
         if isinstance(error, AssertExc):
             await ctx.reply(Locale.get(error.key, **error.kwargs), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
+            return
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.send(f"Try again in {error.retry_after:.1f}s", ephemeral=True) # TODO: LOCALES
             return
         if ctx.command and ctx.command.has_error_handler():
             await super().on_command_error(ctx, error)

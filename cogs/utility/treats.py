@@ -92,22 +92,24 @@ class Treats(commands.Cog):
     @reuse.sub_cmd(treats, "treats.gift")
     @reuse.cmd_describe("treats.gift", ["member", "amount"])
     @reuse.guild_only
-    async def treats_gift(self, ctx: commands.Context, member: str, amount: int | None = None):
-        target, amount = await self.bot.extract_member_and_amount(ctx, member, amount)
-        if not target or not isinstance(target, discord.Member): return await ctx.reply("Mention a member or reply to their message")
-        Assert.is_not_bot(target)
+    async def treats_gift(self, ctx: commands.Context, member: str | None = None, amount: str | None = None):
+        target_user, target_amount = await self.bot.extract_member_and_amount(ctx, member, amount)
+        print(target_user, target_amount, type(target_user), type(target_amount))
+        if not target_user or not isinstance(target_user, discord.Member): return await ctx.reply("Mention a member or reply to their message")
+        if target_amount is None: return await ctx.reply("Include amount as an integer in your command please")
 
-        if target.id == ctx.author.id: return await ctx.reply("you silly")
+        Assert.is_not_bot(target_user)
 
-        if amount == 0: return await ctx.reply("wow you want to offer them nothing")
-        if amount < 0: return await ctx.reply("we are stealing apparently?")
+        if target_user.id == ctx.author.id: return await ctx.reply("you silly")
+
+        if target_amount < 0: return await ctx.reply("we are stealing apparently?")
 
         row = await self.bot.db.treats.get(ctx.guild.id, ctx.author.id) or {"balance": 0}
-        if row["balance"] < amount: return await ctx.reply(Locale.get("treats.not_enough", treats = row["balance"]))
+        if row["balance"] < target_amount: return await ctx.reply(Locale.get("treats.not_enough", treats = row["balance"]))
 
         try:
-            if amount > 0: await self.bot.db.treats.transfer(ctx.guild.id, ctx.author.id, target.id, amount)
-            await ctx.reply(Locale.get("treats.gift.result"+(".zero" if amount == 0 else ""), member = target.mention, treats = amount), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
+            if target_amount > 0: await self.bot.db.treats.transfer(ctx.guild.id, ctx.author.id, target_user.id, target_amount)
+            await ctx.reply(Locale.get("treats.gift.result"+(".zero" if target_amount == 0 else ""), member = target_user.mention, treats = target_amount), ephemeral=True, allowed_mentions=reuse.NO_MENTION)
         except Exception as e:
             await ctx.reply(Locale.get("treats.gift.fail", error = f"\n-#{e}"), ephemeral = True)
 
@@ -139,22 +141,23 @@ class Treats(commands.Cog):
 
     @reuse.sub_cmd(treats, "treats.feed")
     @reuse.guild_only
-    async def treats_feed(self, ctx: commands.Context, member: str, amount: int | None = 1):
+    async def treats_feed(self, ctx: commands.Context, member: str, amount: str = "1"):
         bucket = self.feed_cooldown.get_bucket(ctx.message)
         if not bucket: return
         retry_after = bucket.get_retry_after(time.time())
         if retry_after: raise commands.CommandOnCooldown(bucket, retry_after, commands.BucketType.user)
 
-        target, amount = await self.bot.extract_member_and_amount(ctx, member, amount)
-        if not target or not isinstance(amount, int) or not isinstance(target, discord.Member): return await ctx.reply("Mention a member or reply to their message")
+        target_user, target_amount = await self.bot.extract_member_and_amount(ctx, member, amount)
+        if not target_user or not isinstance(target_user, discord.Member): return await ctx.reply("Mention a member or reply to their message")
+        if target_amount is None: return await ctx.reply("Include amount as an integer in your command please")
 
-        if target.id == ctx.author.id: return await ctx.reply("you silly")
+        if target_user.id == ctx.author.id: return await ctx.reply("you silly")
 
-        if amount > 1: return await ctx.reply("more than one? you want them to explode")
-        if amount == 0: return await ctx.reply("wow you want to offer them nothing")
-        if amount < 0: return await ctx.reply("you so generous")
+        if target_amount > 1: return await ctx.reply("more than one? you want them to explode")
+        if target_amount == 0: return await ctx.reply("wow you want to offer them nothing")
+        if target_amount < 0: return await ctx.reply("you so generous")
 
-        if target.id != ctx.guild.me.id: Assert.is_not_bot(target)
+        if target_user.id != ctx.guild.me.id: Assert.is_not_bot(target_user)
 
         row = await self.bot.db.treats.get(ctx.guild.id, ctx.author.id) or {"balance": 0}
         if row["balance"] < 1: return await ctx.reply(Locale.get("treats.not_enough", treats = row["balance"]))
@@ -164,9 +167,9 @@ class Treats(commands.Cog):
         try:
             bucket.update_rate_limit(time.time())
 
-            if target.id == ctx.guild.me.id: return await ctx.reply(random.choice(self.FEED_REPLIES))
-            view = AcceptTreatView(ctx.author, target, self.bot, self)
-            await ctx.reply(f"{ctx.author.mention} offered {target.mention} a treat", view=view)
+            if target_user.id == ctx.guild.me.id: return await ctx.reply(random.choice(self.FEED_REPLIES))
+            view = AcceptTreatView(ctx.author, target_user, self.bot, self)
+            await ctx.reply(f"{ctx.author.mention} offered {target_user.mention} a treat", view=view)
         except Exception as e:
             print(e)
             await ctx.reply(Locale.get("overall.fail", error = f"\n-#{e}"), ephemeral = True)
@@ -184,10 +187,6 @@ class Treats(commands.Cog):
 
         await self.bot.db.treats.add(message.guild.id, int(user_id), treat)
         await message.reply(Locale.get("treats.on_levelup", member = f"<@{user_id}>", treats = treat))
-
-    @treats_gift.error
-    async def cooldown_error(self, ctx: commands.Context, error):
-        if isinstance(error, commands.CommandOnCooldown): await ctx.send(f"Try again in {error.retry_after:.1f}s", ephemeral=True) # TODO: LOCALES
 
 
 # https://fallendeity.github.io/discord.py-masterclass/views/#basic-view
